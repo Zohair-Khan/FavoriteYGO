@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Favorite Yu-Gi-Oh! Monster Picker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="grid" class="grid">
+  <!-- boxes are positioned by script.js to sit exactly over the template's card-back slots -->
+</div>
+
+<div class="controls">
+  <button id="downloadBtn">Download Image</button>
+</div>
+
+<!-- Modal for picking a card within a category -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <input type="text" id="searchBox" placeholder="Search cards...">
+      <button id="closeModal">&times;</button>
+    </div>
+    <div id="cardList" class="card-list"></div>
+  </div>
+</div>
+
+<script src="card_data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
