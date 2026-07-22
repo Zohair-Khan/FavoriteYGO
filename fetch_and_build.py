@@ -56,8 +56,8 @@ categories = {
 }
 
 for card in monsters:
-    ctype = card["type"]          # e.g. "Effect Monster", "Pendulum Effect Monster"
-    frame = card.get("frameType", "")
+    ctype = card["type"]           # e.g. "Effect Monster", "Tuner Monster" (sub-tags only)
+    frame = card.get("frameType", "")  # e.g. "normal", "effect", "xyz_pendulum" -- the actual card frame/border
     desc = card.get("desc", "")
 
     # card_images holds one entry per artwork (default art is always index 0;
@@ -74,39 +74,53 @@ for card in monsters:
             name = f"{name} (Alt Art {idx})"
         entries.append({"name": name, "id": img["id"]})
 
-    if "Link" in ctype:
-        categories["LINK"].extend(entries)
-    if "Pendulum" in ctype:
+    # --- The 8 main frame-based categories ---
+    # IMPORTANT: these use "frameType" (the actual card frame/border color),
+    # NOT the "type" text field. YGOPRODeck's "type" field collapses down to
+    # a single label -- e.g. a Normal Tuner monster's type is just
+    # "Tuner Monster", with no mention of "Normal" at all. frameType stays
+    # reliable because Konami always renders the same frame color for a
+    # given main category regardless of sub-tags like Tuner/Gemini/Spirit/etc.
+    if "pendulum" in frame:
         categories["PENDULUM"].extend(entries)
-    if "XYZ" in ctype or "Xyz" in ctype:
-        categories["XYZ"].extend(entries)
-    if "Synchro" in ctype:
-        categories["SYNCHRO"].extend(entries)
-    if "Fusion" in ctype:
-        categories["FUSION"].extend(entries)
-    if "Ritual" in ctype:
-        categories["RITUAL"].extend(entries)
-    if ctype == "Normal Monster" or ctype == "Normal Pendulum Monster":
+
+    base_frame = frame.replace("_pendulum", "")
+    if base_frame == "normal":
         categories["NORMAL"].extend(entries)
+    elif base_frame == "effect":
+        categories["EFFECT"].extend(entries)
+    elif base_frame == "ritual":
+        categories["RITUAL"].extend(entries)
+    elif base_frame == "fusion":
+        categories["FUSION"].extend(entries)
+    elif base_frame == "synchro":
+        categories["SYNCHRO"].extend(entries)
+    elif base_frame == "xyz":
+        categories["XYZ"].extend(entries)
+    elif base_frame == "link":
+        categories["LINK"].extend(entries)
+
+    # --- Additive sub-tags ---
+    # These aren't frame types -- they're extra abilities/labels layered on
+    # top of one of the 8 categories above, so a card can (and often does)
+    # land in one of the categories above *and* one or more of these.
     if "Gemini" in ctype:
         categories["GEMINI"].extend(entries)
-    if ctype in ("Effect Monster", "Pendulum Effect Monster"):
-        categories["EFFECT"].extend(entries)
     if "Toon" in ctype:
         categories["TOON"].extend(entries)
     if "Spirit" in ctype:
         categories["SPIRIT"].extend(entries)
     if "Union" in ctype:
         categories["UNION"].extend(entries)
-
-    # Flip and Tuner aren't in the "type" field -- they're only mentioned
-    # in the card text, so this is a best-effort text search.
-    # NOTE: you'll likely want to manually review/clean these two lists,
-    # since text matching can both over- and under-catch cards.
-    if desc.startswith("FLIP:") or "This card is flipped" in desc:
-        categories["FLIP"].extend(entries)
     if "Tuner" in ctype:
         categories["TUNER"].extend(entries)
+
+    # Flip isn't in "type" or "frameType" at all -- it's only mentioned in
+    # the card text, so this is a best-effort text search.
+    # NOTE: you'll likely want to manually review/clean this list, since
+    # text matching can both over- and under-catch cards.
+    if desc.startswith("FLIP:") or "This card is flipped" in desc:
+        categories["FLIP"].extend(entries)
 
 for k, v in categories.items():
     print(f"{k}: {len(v)} cards")
