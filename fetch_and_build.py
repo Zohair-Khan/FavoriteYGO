@@ -116,10 +116,13 @@ for card in monsters:
         categories["TUNER"].extend(entries)
 
     # Flip isn't in "type" or "frameType" at all -- but every real Flip
-    # Monster's card text begins with "Flip:" or "FLIP:", so that prefix is
-    # a precise, reliable classifier (much better than the broader phrase
-    # search this used to do, which both missed and over-caught cards).
-    if desc.upper().startswith("FLIP:"):
+    # Monster's card text includes a "Flip:"/"FLIP:" marker right before its
+    # flip effect, so that's a precise, reliable classifier. Checking
+    # anywhere in the text (not just the start) matters for Pendulum
+    # monsters -- YGOPRODeck concatenates the Pendulum Effect text *before*
+    # the Monster Effect text, so a Pendulum Flip Monster's "FLIP:" marker
+    # ends up partway through the string, not at position 0.
+    if "flip:" in desc.lower():
         categories["FLIP"].extend(entries)
 
 for k, v in categories.items():
