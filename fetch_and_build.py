@@ -114,15 +114,7 @@ for card in monsters:
         categories["UNION"].extend(entries)
     if "Tuner" in ctype:
         categories["TUNER"].extend(entries)
-
-    # Flip isn't in "type" or "frameType" at all -- but every real Flip
-    # Monster's card text includes a "Flip:"/"FLIP:" marker right before its
-    # flip effect, so that's a precise, reliable classifier. Checking
-    # anywhere in the text (not just the start) matters for Pendulum
-    # monsters -- YGOPRODeck concatenates the Pendulum Effect text *before*
-    # the Monster Effect text, so a Pendulum Flip Monster's "FLIP:" marker
-    # ends up partway through the string, not at position 0.
-    if "flip:" in desc.lower():
+    if "Flip" in ctype:
         categories["FLIP"].extend(entries)
 
 for k, v in categories.items():
