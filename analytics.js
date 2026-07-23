@@ -1,6 +1,3 @@
-// Same category order as the main picker (with Overall moved to the front
-// and Tuner moved to sit between Pendulum and Gemini), so results read in
-// a left-to-right, top-to-bottom order.
 const CATEGORY_ORDER = [
   "OVERALL",
   "NORMAL", "EFFECT", "RITUAL", "FUSION", "SYNCHRO",
@@ -8,7 +5,7 @@ const CATEGORY_ORDER = [
   "TOON", "SPIRIT", "UNION", "FLIP",
 ];
 
-const TOP_N_PER_CATEGORY = 8;
+const TOP_N_PER_CATEGORY = 10;
 
 // Fill these in -- same project as the main picker.
 const SUPABASE_URL = "https://gukihinomsiwmwousjia.supabase.co";
@@ -18,15 +15,15 @@ const supabaseClient = SUPABASE_URL.startsWith("http")
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-const categoriesEl = document.getElementById("categories");
+const tabsEl = document.getElementById("tabs");
+const panelEl = document.getElementById("panel");
 const statusEl = document.getElementById("status");
+const searchBoxEl = document.getElementById("search-box");
+const searchResultsEl = document.getElementById("search-results");
 
-// Bar color is on a GLOBAL scale (0 = the least-picked card anywhere,
-// 1 = the single most-picked card across all categories), not scaled
-// per-category. That's deliberate: a card's rank *within* its own category
-// is a different question from its raw popularity magnitude site-wide --
-// e.g. the top pick in a category most people never explore might still
-// be objectively rare in absolute terms.
+// Same global-scale heatmap as the original analytics page -- used here as
+// a subtle accent stripe instead of a full loud box, so card art stays the
+// visual focus.
 const HEATMAP_STOPS = [
   { t: 0.00, c: [255, 0, 255] },
   { t: 0.25, c: [0, 0, 255] },
@@ -51,80 +48,191 @@ function heatmapColor(t) {
   return HEATMAP_STOPS[HEATMAP_STOPS.length - 1].c;
 }
 
-// Picks black or white text for readability against whatever heatmap
-// color lands on that row (yellow/green need dark text, magenta/blue/red
-// need light text).
 function readableTextColor([r, g, b]) {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.6 ? "#111" : "#fff";
 }
 
-function createCategoryContainer(category, totalVotes) {
-  const card = document.createElement("div");
-  card.className = "category-card";
+let globalMax = 0;
+let totalsByCategory = {};
+let cache = {}; // category -> rows, so switching tabs back doesn't re-fetch
+let activeCategory = CATEGORY_ORDER[0];
 
-  const heading = document.createElement("h2");
-  heading.textContent = `${category} - ${totalVotes} Votes`;
-  card.appendChild(heading);
+function renderSearchResults(rows) {
+  searchResultsEl.innerHTML = "";
 
-  const body = document.createElement("div");
-  body.className = "category-body";
-  body.innerHTML = "<p class=\"empty\">Loading...</p>";
-  card.appendChild(body);
-
-  categoriesEl.appendChild(card);
-  return body;
-}
-
-function renderCategory(bodyEl, topRows, categoryTotal, globalMax) {
-  bodyEl.innerHTML = "";
-
-  if (topRows.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "empty";
-    empty.textContent = "No picks yet.";
-    bodyEl.appendChild(empty);
+  if (rows.length === 0) {
+    searchResultsEl.innerHTML = "<p class=\"search-empty\">No cards matching that name have any votes yet in this category.</p>";
     return;
   }
 
-  topRows.forEach(row => {
-    const rowEl = document.createElement("div");
-    rowEl.className = "row";
+  const total = totalsByCategory[activeCategory] || 0;
+  rows.forEach(row => {
+    const pct = total > 0 ? ((row.net_picks / total) * 100).toFixed(2) : "0.00";
+    const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
+    const rgb = heatmapColor(fraction);
 
-    const img = document.createElement("img");
-    img.src = `images/${row.card_id}.jpg`;
-    img.alt = row.card_name;
-    img.loading = "lazy";
+    const el = document.createElement("div");
+    el.className = "search-result";
+    el.innerHTML = `
+      <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
+      <div class="info">
+        <div class="sr-name">${row.card_name}</div>
+      </div>
+      <div class="sr-rank">#${row.rank}</div>
+      <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
+        ${pct}% - ${row.net_picks} Votes
+      </div>
+    `;
+    searchResultsEl.appendChild(el);
+  });
+}
 
-    const name = document.createElement("div");
-    name.className = "name";
-    name.textContent = row.card_name;
+async function runSearch() {
+  const term = searchBoxEl.value.trim();
 
+  if (term.length < 2) {
+    searchResultsEl.innerHTML = "";
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("card_tally_ranked_view")
+    .select("category, card_id, card_name, net_picks, rank")
+    .eq("category", activeCategory)
+    .ilike("card_name", `%${term}%`)
+    .order("card_name")
+    .limit(50);
+
+  if (error) {
+    searchResultsEl.innerHTML = `<p class="search-empty">Search failed: ${error.message}</p>`;
+    return;
+  }
+
+  renderSearchResults(data);
+}
+
+let searchDebounce = null;
+searchBoxEl.addEventListener("input", () => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(runSearch, 300); // debounce so we're not firing a query on every keystroke
+});
+
+function renderPanel(category, rows, categoryTotal) {
+  panelEl.innerHTML = "";
+
+  const heading = document.createElement("h2");
+  heading.textContent = `${category} — ${categoryTotal} Votes`;
+  panelEl.appendChild(heading);
+
+  if (rows.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No picks yet.";
+    panelEl.appendChild(empty);
+    return;
+  }
+
+  const top3 = rows.slice(0, 3);
+  const rest = rows.slice(3);
+
+  // --- Podium for top 3 ---
+  const podium = document.createElement("div");
+  podium.className = "podium";
+  const medals = ["1st", "2nd", "3rd"];
+  top3.forEach((row, i) => {
     const pct = categoryTotal > 0 ? ((row.net_picks / categoryTotal) * 100).toFixed(2) : "0.00";
     const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
     const rgb = heatmapColor(fraction);
 
-    const heatBox = document.createElement("div");
-    heatBox.className = "heat-box";
-    heatBox.style.background = `rgb(${rgb.join(",")})`;
-    heatBox.style.color = readableTextColor(rgb);
-    heatBox.textContent = `${pct}% - ${row.net_picks} Votes`;
+    const card = document.createElement("div");
+    card.className = `podium-card rank-${i + 1}`;
+    card.innerHTML = `
+      <div class="medal">${medals[i]}</div>
+      <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
+      <div class="pname">${row.card_name}</div>
+      <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
+        ${pct}% - ${row.net_picks} Votes
+      </div>
+    `;
+    podium.appendChild(card);
+  });
+  panelEl.appendChild(podium);
 
-    rowEl.append(img, name, heatBox);
-    bodyEl.appendChild(rowEl);
+  // --- Ranks 4+ as a compact list ---
+  if (rest.length > 0) {
+    const list = document.createElement("div");
+    list.className = "rest-list";
+    rest.forEach((row, i) => {
+      const rank = i + 4;
+      const pct = categoryTotal > 0 ? ((row.net_picks / categoryTotal) * 100).toFixed(2) : "0.00";
+      const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
+      const rgb = heatmapColor(fraction);
+
+      const rowEl = document.createElement("div");
+      rowEl.className = "row";
+      rowEl.innerHTML = `
+        <div class="rank">#${rank}</div>
+        <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
+        <div class="name">${row.card_name}</div>
+        <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
+          ${pct}% - ${row.net_picks} Votes
+        </div>
+      `;
+      list.appendChild(rowEl);
+    });
+    panelEl.appendChild(list);
+  }
+}
+
+async function loadCategory(category) {
+  if (cache[category]) {
+    renderPanel(category, cache[category], totalsByCategory[category] || 0);
+    return;
+  }
+
+  panelEl.innerHTML = "<p class=\"empty\">Loading...</p>";
+
+  const { data, error } = await supabaseClient
+    .from("card_tally_view")
+    .select("card_id, card_name, net_picks")
+    .eq("category", category)
+    .order("net_picks", { ascending: false })
+    .limit(TOP_N_PER_CATEGORY);
+
+  if (error) {
+    panelEl.innerHTML = `<p class="empty">Couldn't load this category: ${error.message}</p>`;
+    return;
+  }
+
+  cache[category] = data;
+  renderPanel(category, data, totalsByCategory[category] || 0);
+}
+
+function buildTabs() {
+  CATEGORY_ORDER.forEach((category, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = category;
+    if (i === 0) btn.classList.add("active");
+    btn.addEventListener("click", () => {
+      tabsEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeCategory = category;
+      loadCategory(category);
+      if (searchBoxEl.value.trim().length >= 2) runSearch();
+    });
+    tabsEl.appendChild(btn);
   });
 }
 
-async function loadAnalytics() {
+async function init() {
   if (!supabaseClient) {
-    statusEl.textContent = "Analytics aren't set up yet (missing Supabase URL/key in analytics.js).";
+    statusEl.textContent = "Analytics aren't set up yet (missing Supabase URL/key in analytics-v2.js).";
     return;
   }
 
   statusEl.textContent = "Loading...";
 
-  // Global max (for bar/box color scale) -- just the single highest net_picks
-  // value across everything, fetched as one row, not the whole table.
   const { data: maxRows, error: maxError } = await supabaseClient
     .from("card_tally_view")
     .select("net_picks")
@@ -135,10 +243,8 @@ async function loadAnalytics() {
     statusEl.textContent = `Couldn't load analytics: ${maxError.message}`;
     return;
   }
-  const globalMax = maxRows.length ? maxRows[0].net_picks : 0;
+  globalMax = maxRows.length ? maxRows[0].net_picks : 0;
 
-  // Per-category totals -- only ever 15 rows regardless of traffic, so no
-  // risk of this ever getting truncated.
   const { data: totalsData, error: totalsError } = await supabaseClient
     .from("category_totals_view")
     .select("category, total_votes");
@@ -147,42 +253,12 @@ async function loadAnalytics() {
     statusEl.textContent = `Couldn't load analytics: ${totalsError.message}`;
     return;
   }
-  const totalsByCategory = {};
   totalsData.forEach(row => { totalsByCategory[row.category] = row.total_votes; });
 
-  // Create every category's container UP FRONT, in the correct order --
-  // important because the per-category fetches below run concurrently and
-  // resolve in whatever order the network happens to return them, which
-  // would otherwise shuffle the categories around on the page.
-  const containers = {};
-  CATEGORY_ORDER.forEach(category => {
-    containers[category] = createCategoryContainer(category, totalsByCategory[category] || 0);
-  });
-
-  // Top N rows PER category, fetched as its own small bounded query -- this
-  // is the key fix. Fetching everything in one request could silently get
-  // truncated by Supabase's row cap once enough distinct cards across all
-  // categories had votes; querying one category at a time with its own
-  // .limit() means no single request can ever be large enough to hit that
-  // cap, no matter how much traffic the site gets.
-  await Promise.all(CATEGORY_ORDER.map(async category => {
-    const { data, error } = await supabaseClient
-      .from("card_tally_view")
-      .select("card_id, card_name, net_picks")
-      .eq("category", category)
-      .order("net_picks", { ascending: false })
-      .limit(TOP_N_PER_CATEGORY);
-
-    if (error) {
-      console.error(`Failed to load ${category}:`, error.message);
-      renderCategory(containers[category], [], 0, globalMax);
-      return;
-    }
-
-    renderCategory(containers[category], data, totalsByCategory[category] || 0, globalMax);
-  }));
+  buildTabs();
+  await loadCategory(CATEGORY_ORDER[0]);
 
   statusEl.textContent = "";
 }
 
-loadAnalytics();
+init();
