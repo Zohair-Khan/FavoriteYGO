@@ -46,12 +46,34 @@ body {
 }
 .controls button { margin: 4px; padding: 6px 12px; }
 
+#downloadBtn {
+  display: inline-block;
+  background: #333;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 2px solid #d4af37;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+#downloadBtn:hover {
+  background: #4a4a4a;
+  border-color: #e5c458;
+}
+
 .credit {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: #fff;
   font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
 
 div.credit {
@@ -63,20 +85,31 @@ div.credit {
 .credit a {
   color: #fff;
   text-decoration: underline;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
 
 .credit .x-logo {
-  height: 20px;
+  height: 26px;
   width: auto;
 }
 
-.cta-link {
-  font-size: 22px;
+.cta-button {
+  display: inline-block;
+  background: #333;
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 2px solid #d4af37;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.cta-link a {
-  color: #fff;
-  text-decoration: underline;
+.cta-button:hover {
+  background: #4a4a4a;
+  border-color: #e5c458;
 }
 #codeBox { width: 500px; max-width: 90%; margin-top: 10px; }
 

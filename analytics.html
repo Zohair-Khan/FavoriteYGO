@@ -41,14 +41,6 @@
     justify-content: center;
     flex-wrap: wrap;
     gap: 24px;
-    font-size: 18px;
-    font-weight: bold;
-  }
-
-  #top-links a {
-    color: #fff;
-    text-decoration: underline;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
   }
 
   #top-links .credit {
@@ -56,12 +48,39 @@
     align-items: center;
     gap: 6px;
     color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+
+  #top-links .credit a {
+    color: #fff;
+    text-decoration: underline;
     text-shadow: 0 1px 4px rgba(0,0,0,0.8);
   }
 
   #top-links .x-logo {
-    height: 18px;
+    height: 26px;
     width: auto;
+  }
+
+  .cta-button {
+    display: inline-block;
+    background: #333;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 2px solid #d4af37;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .cta-button:hover {
+    background: #4a4a4a;
+    border-color: #e5c458;
   }
 
   #search-section {
@@ -318,8 +337,8 @@
 <h1>Everyone's Favorite <img src="tcg-logo.png" class="logo-inline" alt="Yu-Gi-Oh!"> Monsters</h1>
 
 <div id="top-links">
-  <a href="index.html">Make your own list here!</a>
-  <span class="credit">Made by <img src="x-logo.png" class="x-logo" alt="X"> <a href="https://x.com/_Bawsch" target="_blank" rel="noopener">@_Bawsch</a></span>
+  <a href="index.html" class="cta-button">Make your own list here!</a>
+  <span class="credit">Made by <img src="x-logo.png" class="x-logo" alt="X"> <a href="https://x.com/_Bawsch" target="_blank" rel="noopener">_Bawsch</a></span>
 </div>
 
 <div id="tabs"></div>
