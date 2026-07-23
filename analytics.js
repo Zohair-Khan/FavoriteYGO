@@ -1,9 +1,11 @@
-// Same category order as the main picker, so results read in the same
-// left-to-right, top-to-bottom order visitors are used to.
+// Same category order as the main picker (with Overall moved to the front
+// and Tuner moved to sit between Pendulum and Gemini), so results read in
+// a left-to-right, top-to-bottom order.
 const CATEGORY_ORDER = [
+  "OVERALL",
   "NORMAL", "EFFECT", "RITUAL", "FUSION", "SYNCHRO",
-  "XYZ", "LINK", "PENDULUM", "GEMINI", "TOON",
-  "SPIRIT", "UNION", "FLIP", "TUNER", "OVERALL",
+  "XYZ", "LINK", "PENDULUM", "TUNER", "GEMINI",
+  "TOON", "SPIRIT", "UNION", "FLIP",
 ];
 
 const TOP_N_PER_CATEGORY = 8;
@@ -57,12 +59,12 @@ function readableTextColor([r, g, b]) {
   return luminance > 0.6 ? "#111" : "#fff";
 }
 
-function createCategoryContainer(category) {
+function createCategoryContainer(category, totalVotes) {
   const card = document.createElement("div");
   card.className = "category-card";
 
   const heading = document.createElement("h2");
-  heading.textContent = category;
+  heading.textContent = `${category} - ${totalVotes} Votes`;
   card.appendChild(heading);
 
   const body = document.createElement("div");
@@ -154,7 +156,7 @@ async function loadAnalytics() {
   // would otherwise shuffle the categories around on the page.
   const containers = {};
   CATEGORY_ORDER.forEach(category => {
-    containers[category] = createCategoryContainer(category);
+    containers[category] = createCategoryContainer(category, totalsByCategory[category] || 0);
   });
 
   // Top N rows PER category, fetched as its own small bounded query -- this
