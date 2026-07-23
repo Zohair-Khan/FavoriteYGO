@@ -36,8 +36,48 @@ body {
   object-fit: cover;
 }
 
-.controls { margin-top: 20px; }
+.controls {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 .controls button { margin: 4px; padding: 6px 12px; }
+
+.credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 18px;
+}
+
+div.credit {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.credit a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.credit .x-logo {
+  height: 20px;
+  width: auto;
+}
+
+.cta-link {
+  font-size: 22px;
+}
+
+.cta-link a {
+  color: #fff;
+  text-decoration: underline;
+}
 #codeBox { width: 500px; max-width: 90%; margin-top: 10px; }
 
 .modal {
@@ -68,6 +108,16 @@ body {
   border-bottom: 1px solid #ccc;
 }
 .modal-header input { flex: 1; padding: 10px; font-size: 16px; }
+.modal-header #clearBtn {
+  margin-left: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.modal-header #clearBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .modal-header button { margin-left: 8px; font-size: 22px; cursor: pointer; }
 
 .card-list {

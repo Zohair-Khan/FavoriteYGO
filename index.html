@@ -13,6 +13,11 @@
 
 <div class="controls">
   <button id="downloadBtn">Download Image</button>
+  <span class="cta-link"><a href="analytics.html">See what others voted for here!</a></span>
+</div>
+
+<div class="credit">
+  Made by <img src="x-logo.png" class="x-logo" alt="X"> <a href="https://x.com/Bawsch_" target="_blank" rel="noopener">@Bawsch_</a>
 </div>
 
 <!-- Modal for picking a card within a category -->
@@ -20,12 +25,14 @@
   <div class="modal-content">
     <div class="modal-header">
       <input type="text" id="searchBox" placeholder="Search cards...">
+      <button id="clearBtn" title="Remove this box's current selection">Clear</button>
       <button id="closeModal">&times;</button>
     </div>
     <div id="cardList" class="card-list"></div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="card_data.js"></script>
 <script src="script.js"></script>
 </body>

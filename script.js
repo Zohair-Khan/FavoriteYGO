@@ -26,8 +26,44 @@ const grid = document.getElementById("grid");
 const modal = document.getElementById("modal");
 const cardList = document.getElementById("cardList");
 const searchBox = document.getElementById("searchBox");
+const clearBtn = document.getElementById("clearBtn");
 
 let activeBoxKey = null; // which box we're currently filling
+
+const PICKS_STORAGE_KEY = "ygo_picks";
+const SESSION_STORAGE_KEY = "ygo_session_id";
+
+// One random id per browser, generated once and reused -- lets you tell
+// "these clicks all came from the same visitor" without any login.
+function getSessionId() {
+  let id = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(SESSION_STORAGE_KEY, id);
+  }
+  return id;
+}
+const SESSION_ID = getSessionId();
+
+function savePicksToStorage() {
+  const data = {};
+  grid.querySelectorAll(".box").forEach(box => {
+    if (box.dataset.cardId) {
+      data[box.dataset.key] = { id: box.dataset.cardId, name: box.dataset.cardName };
+    }
+  });
+  localStorage.setItem(PICKS_STORAGE_KEY, JSON.stringify(data));
+}
+
+function restorePicksFromStorage() {
+  let data;
+  try {
+    data = JSON.parse(localStorage.getItem(PICKS_STORAGE_KEY) || "{}");
+  } catch (e) {
+    data = {};
+  }
+  Object.entries(data).forEach(([key, card]) => renderBoxImage(key, card));
+}
 
 // Build every card list once (used by Import Code, which needs to match
 // against the whole database regardless of what's currently on the grid)
@@ -69,7 +105,11 @@ CATEGORY_LAYOUT.forEach(cat => {
   grid.appendChild(box);
 });
 
-function setBoxImage(key, card) {
+restorePicksFromStorage();
+
+// Pure DOM update -- no persistence, no logging. Used both by real selections
+// and by restoring saved picks on page load (which shouldn't count as a new click).
+function renderBoxImage(key, card) {
   const box = grid.querySelector(`.box[data-key="${key}"]`);
   let img = box.querySelector("img");
   if (!img) {
@@ -82,14 +122,58 @@ function setBoxImage(key, card) {
   box.dataset.cardName = card.name;
 }
 
+// A real selection: click a thumbnail -> render it, save it, log it.
+// If the box already had a different card in it, that old pick gets
+// auto-cleared (logged as "clear") first, so swapping a choice never
+// inflates counts -- only Clear vs. no-selection reflects an actual undo.
+function setBoxImage(key, card) {
+  const box = grid.querySelector(`.box[data-key="${key}"]`);
+  const prevId = box.dataset.cardId;
+  const prevName = box.dataset.cardName;
+
+  if (prevId && String(prevId) !== String(card.id)) {
+    logClickEvent(key, { id: prevId, name: prevName }, "clear");
+  }
+
+  renderBoxImage(key, card);
+  savePicksToStorage();
+  logClickEvent(key, card, "place");
+}
+
+// Remove whatever's currently in a box (used by the Clear button).
+function clearBoxImage(key) {
+  const box = grid.querySelector(`.box[data-key="${key}"]`);
+  if (!box.dataset.cardId) return; // nothing selected, nothing to clear
+
+  const card = { id: box.dataset.cardId, name: box.dataset.cardName };
+  const img = box.querySelector("img");
+  if (img) img.remove();
+  delete box.dataset.cardId;
+  delete box.dataset.cardName;
+
+  savePicksToStorage();
+  logClickEvent(key, card, "clear");
+}
+
 // --- Modal picker ---
 function openModal(key) {
   activeBoxKey = key;
   searchBox.value = "";
   renderCardList(getListFor(key));
+  updateClearBtnState();
   modal.classList.remove("hidden");
   searchBox.focus();
 }
+
+function updateClearBtnState() {
+  const box = grid.querySelector(`.box[data-key="${activeBoxKey}"]`);
+  clearBtn.disabled = !box.dataset.cardId;
+}
+
+clearBtn.addEventListener("click", () => {
+  clearBoxImage(activeBoxKey);
+  updateClearBtnState();
+});
 
 function renderCardList(list) {
   cardList.innerHTML = "";
@@ -113,8 +197,15 @@ function renderCardList(list) {
 
 searchBox.addEventListener("input", () => {
   const term = searchBox.value.toLowerCase();
-  const full = getListFor(activeBoxKey);
-  renderCardList(full.filter(c => c.name.toLowerCase().includes(term)));
+
+  // Overall Favorite normally only offers your current picks, but once you
+  // start typing a search, open it up to the whole database so you can pull
+  // up literally any card as your overall favorite.
+  const base = (activeBoxKey === "OVERALL" && term)
+    ? getAllCardsFlat()
+    : getListFor(activeBoxKey);
+
+  renderCardList(term ? base.filter(c => c.name.toLowerCase().includes(term)) : base);
 });
 
 document.getElementById("closeModal").addEventListener("click", () => {
@@ -210,3 +301,28 @@ document.getElementById("downloadBtn").addEventListener("click", async () => {
 
 // Write/Import Code feature is on hold for now -- getAllCardsFlat() is kept
 // above since nothing else needs it currently removed, but no UI calls it.
+
+// --- Log every place/clear click to Supabase ---
+// Fill these in from your Supabase project: Settings > API
+const SUPABASE_URL = "https://gukihinomsiwmwousjia.supabase.co"; // e.g. https://xxxxx.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2loaW5vbXNpd213b3VzamlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MDQxNjIsImV4cCI6MjEwMDM4MDE2Mn0.9r6K-skI0XJ88MG6xfrmVpc0yGK4-biPVvRXF-ITSRc";
+
+const supabaseClient = (SUPABASE_URL.startsWith("http"))
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+async function logClickEvent(category, card, action) {
+  if (!supabaseClient) return; // not configured yet -- fail silently, don't break the UI
+  try {
+    const { error } = await supabaseClient.from("click_events").insert({
+      session_id: SESSION_ID,
+      category,
+      card_id: String(card.id),
+      card_name: card.name,
+      action, // "place" or "clear"
+    });
+    if (error) console.error("click_events insert failed:", error.message);
+  } catch (e) {
+    console.error("click_events insert failed:", e);
+  }
+}

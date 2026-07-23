@@ -115,11 +115,11 @@ for card in monsters:
     if "Tuner" in ctype:
         categories["TUNER"].extend(entries)
 
-    # Flip isn't in "type" or "frameType" at all -- it's only mentioned in
-    # the card text, so this is a best-effort text search.
-    # NOTE: you'll likely want to manually review/clean this list, since
-    # text matching can both over- and under-catch cards.
-    if desc.startswith("FLIP:") or "This card is flipped" in desc:
+    # Flip isn't in "type" or "frameType" at all -- but every real Flip
+    # Monster's card text begins with "Flip:" or "FLIP:", so that prefix is
+    # a precise, reliable classifier (much better than the broader phrase
+    # search this used to do, which both missed and over-caught cards).
+    if desc.upper().startswith("FLIP:"):
         categories["FLIP"].extend(entries)
 
 for k, v in categories.items():
