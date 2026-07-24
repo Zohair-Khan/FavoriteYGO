@@ -14,6 +14,10 @@ body {
   background-size: 100% 100%;
 }
 
+.grid-st {
+  background-image: url("templateST.png");
+}
+
 .box {
   position: absolute;
   cursor: pointer;

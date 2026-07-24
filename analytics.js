@@ -1,8 +1,39 @@
+// Each entry: key = the raw category value stored in click_events/card_tally_view,
+// label = what's actually shown on the tab button. These differ for the
+// Spell/Trap categories since their keys (e.g. "SPELL_NORMAL") aren't
+// meant to be displayed as-is.
 const CATEGORY_ORDER = [
-  "OVERALL",
-  "NORMAL", "EFFECT", "RITUAL", "FUSION", "SYNCHRO",
-  "XYZ", "LINK", "PENDULUM", "TUNER", "GEMINI",
-  "TOON", "SPIRIT", "UNION", "FLIP",
+  { key: "OVERALL", label: "Favorite Monster" },
+  { key: "FAVORITE_ST", label: "Favorite S/T" },
+  { key: "NORMAL", label: "Normal" },
+  { key: "EFFECT", label: "Effect" },
+  { key: "RITUAL", label: "Ritual" },
+  { key: "FUSION", label: "Fusion" },
+  { key: "SYNCHRO", label: "Synchro" },
+  { key: "XYZ", label: "Xyz" },
+  { key: "LINK", label: "Link" },
+  { key: "PENDULUM", label: "Pendulum" },
+  { key: "TUNER", label: "Tuner" },
+  { key: "GEMINI", label: "Gemini" },
+  { key: "TOON", label: "Toon" },
+  { key: "SPIRIT", label: "Spirit" },
+  { key: "UNION", label: "Union" },
+  { key: "FLIP", label: "Flip" },
+
+  { key: "SPELL_NORMAL", label: "Normal Spell" },
+  { key: "SPELL_CONTINUOUS", label: "Continuous Spell" },
+  { key: "EQUIP", label: "Equip Spell" },
+  { key: "QUICKPLAY", label: "Quick-Play Spell" },
+  { key: "FIELD", label: "Field Spell" },
+  { key: "RITUAL_SPELL", label: "Ritual Spell" },
+  { key: "TRAP_NORMAL", label: "Normal Trap" },
+  { key: "TRAP_CONTINUOUS", label: "Continuous Trap" },
+  { key: "COUNTER", label: "Counter Trap" },
+  { key: "BANNED", label: "Banned S/T" },
+  { key: "FORBIDDEN", label: "\"Forbidden\"" },
+  { key: "POT", label: "\"Pot\"" },
+  { key: "SOLEMN", label: "Solemn" },
+  { key: "DOMINUS", label: "Dominus" },
 ];
 
 const TOP_N_PER_CATEGORY = 10;
@@ -56,7 +87,8 @@ function readableTextColor([r, g, b]) {
 let globalMax = 0;
 let totalsByCategory = {};
 let cache = {}; // category -> rows, so switching tabs back doesn't re-fetch
-let activeCategory = CATEGORY_ORDER[0];
+let activeCategory = CATEGORY_ORDER[0].key;
+let activeLabel = CATEGORY_ORDER[0].label;
 
 function renderSearchResults(rows) {
   searchResultsEl.innerHTML = "";
@@ -118,11 +150,11 @@ searchBoxEl.addEventListener("input", () => {
   searchDebounce = setTimeout(runSearch, 300); // debounce so we're not firing a query on every keystroke
 });
 
-function renderPanel(category, rows, categoryTotal) {
+function renderPanel(label, rows, categoryTotal) {
   panelEl.innerHTML = "";
 
   const heading = document.createElement("h2");
-  heading.textContent = `${category} — ${categoryTotal} Votes`;
+  heading.textContent = `${label} — ${categoryTotal} Votes`;
   panelEl.appendChild(heading);
 
   if (rows.length === 0) {
@@ -185,9 +217,9 @@ function renderPanel(category, rows, categoryTotal) {
   }
 }
 
-async function loadCategory(category) {
+async function loadCategory(category, label) {
   if (cache[category]) {
-    renderPanel(category, cache[category], totalsByCategory[category] || 0);
+    renderPanel(label, cache[category], totalsByCategory[category] || 0);
     return;
   }
 
@@ -206,19 +238,20 @@ async function loadCategory(category) {
   }
 
   cache[category] = data;
-  renderPanel(category, data, totalsByCategory[category] || 0);
+  renderPanel(label, data, totalsByCategory[category] || 0);
 }
 
 function buildTabs() {
-  CATEGORY_ORDER.forEach((category, i) => {
+  CATEGORY_ORDER.forEach((cat, i) => {
     const btn = document.createElement("button");
-    btn.textContent = category;
+    btn.textContent = cat.label;
     if (i === 0) btn.classList.add("active");
     btn.addEventListener("click", () => {
       tabsEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      activeCategory = category;
-      loadCategory(category);
+      activeCategory = cat.key;
+      activeLabel = cat.label;
+      loadCategory(cat.key, cat.label);
       if (searchBoxEl.value.trim().length >= 2) runSearch();
     });
     tabsEl.appendChild(btn);
@@ -256,7 +289,7 @@ async function init() {
   totalsData.forEach(row => { totalsByCategory[row.category] = row.total_votes; });
 
   buildTabs();
-  await loadCategory(CATEGORY_ORDER[0]);
+  await loadCategory(CATEGORY_ORDER[0].key, CATEGORY_ORDER[0].label);
 
   statusEl.textContent = "";
 }
