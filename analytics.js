@@ -32,8 +32,8 @@ const CATEGORY_ORDER = [
   { key: "BANNED", label: "Banned S/T" },
   { key: "FORBIDDEN", label: "\"Forbidden\"" },
   { key: "POT", label: "\"Pot\"" },
-  { key: "SOLEMN", label: "Solemn" },
-  { key: "DOMINUS", label: "Dominus" },
+  { key: "SOLEMN", label: "\"Solemn\"" },
+  { key: "DOMINUS", label: "\"Dominus\"" },
 ];
 
 const TOP_N_PER_CATEGORY = 10;

@@ -18,8 +18,8 @@ const CATEGORY_LAYOUT = [
   { key: "TRAP_NORMAL",      label: "Normal",       left: 10.208, top: 72.481, width: 13.073, height: 25.434 },
   { key: "TRAP_CONTINUOUS",  label: "Continuous",   left: 26.823, top: 72.481, width: 13.073, height: 25.434 },
   { key: "COUNTER",          label: "Counter",      left: 43.438, top: 72.481, width: 13.073, height: 25.434 },
-  { key: "DOMINUS",          label: "Dominus",      left: 60.104, top: 72.481, width: 13.073, height: 25.434 },
-  { key: "SOLEMN",           label: "Solemn",       left: 76.667, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "DOMINUS",          label: "\"Dominus\"",  left: 60.104, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "SOLEMN",           label: "\"Solemn\"",   left: 76.667, top: 72.481, width: 13.073, height: 25.434 },
 ];
 
 const grid = document.getElementById("grid");
