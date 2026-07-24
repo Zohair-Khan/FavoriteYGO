@@ -90,6 +90,17 @@ let cache = {}; // category -> rows, so switching tabs back doesn't re-fetch
 let activeCategory = CATEGORY_ORDER[0].key;
 let activeLabel = CATEGORY_ORDER[0].label;
 
+// --- Trend comparison state ---
+let compareCards = []; // [{id, name}, ...] -- cards currently on the chart
+let trendChart = null;
+const trendSectionEl = document.getElementById("trend-section");
+const trendCardBoxesEl = document.getElementById("trend-card-boxes");
+const trendTitleEl = document.getElementById("trend-title");
+const TREND_COLORS = [
+  "#c0392b", "#2980b9", "#27ae60", "#8e44ad", "#d35400",
+  "#16a085", "#c2185b", "#7f8c8d", "#f39c12", "#2c3e50",
+];
+
 function renderSearchResults(rows) {
   searchResultsEl.innerHTML = "";
 
@@ -98,27 +109,196 @@ function renderSearchResults(rows) {
     return;
   }
 
-  const total = totalsByCategory[activeCategory] || 0;
   rows.forEach(row => {
-    const pct = total > 0 ? ((row.net_picks / total) * 100).toFixed(2) : "0.00";
-    const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
-    const rgb = heatmapColor(fraction);
-
     const el = document.createElement("div");
     el.className = "search-result";
+    const alreadyAdded = compareCards.some(c => String(c.id) === String(row.card_id));
     el.innerHTML = `
       <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
       <div class="info">
         <div class="sr-name">${row.card_name}</div>
       </div>
       <div class="sr-rank">#${row.rank}</div>
-      <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
-        ${pct}% - ${row.net_picks} Votes
-      </div>
     `;
+    if (alreadyAdded) {
+      el.style.opacity = "0.5";
+      el.title = "Already on the chart";
+    } else {
+      el.addEventListener("click", () => {
+        searchResultsEl.innerHTML = ""; // close the dropdown
+        searchBoxEl.value = "";
+        addCardToCompare(row.card_id, row.card_name, row.rank, row.net_picks);
+      });
+    }
     searchResultsEl.appendChild(el);
   });
 }
+
+// --- Trend comparison: add/remove cards, render chips, fetch + draw chart ---
+
+function colorForIndex(i) {
+  return TREND_COLORS[i % TREND_COLORS.length];
+}
+
+function renderTrendCardBoxes() {
+  trendCardBoxesEl.innerHTML = "";
+  const total = totalsByCategory[activeCategory] || 0;
+
+  compareCards.forEach((card, i) => {
+    const pct = total > 0 ? ((card.netPicks / total) * 100).toFixed(2) : "0.00";
+    const fraction = globalMax > 0 ? card.netPicks / globalMax : 0;
+    const rgb = heatmapColor(fraction);
+
+    const box = document.createElement("div");
+    box.className = "trend-card-box";
+    box.style.borderColor = colorForIndex(i);
+    box.innerHTML = `
+      <div class="sr-rank">#${card.rank}</div>
+      <img src="images/${card.id}.jpg" alt="${card.name}">
+      <div class="info">
+        <div class="sr-name">${card.name}</div>
+      </div>
+      <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
+        ${pct}% - ${card.netPicks} Votes
+      </div>
+      <button class="remove-btn" title="Remove">&times;</button>
+    `;
+    box.querySelector(".remove-btn").addEventListener("click", () => removeCardFromCompare(card.id));
+    trendCardBoxesEl.appendChild(box);
+  });
+}
+
+async function fetchCardHistory(cardId) {
+  const { data, error } = await supabaseClient
+    .from("card_event_history_view")
+    .select("action, created_at")
+    .eq("category", activeCategory)
+    .eq("card_id", String(cardId))
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Failed to load card history:", error.message);
+    statusEl.textContent = `Trend chart error: ${error.message}`;
+    return [];
+  }
+
+  let running = 0;
+  const points = data.map(row => {
+    running += row.action === "place" ? 1 : -1;
+    return { x: row.created_at, y: running };
+  });
+  // Extend the line to the present moment at its last known value, so every
+  // card's line reaches the same right edge of the chart -- otherwise a
+  // card with no recent activity would visually stop short, which could be
+  // misread as it "losing" votes rather than just being quiet recently.
+  if (points.length > 0) {
+    points.push({ x: new Date().toISOString(), y: running });
+  }
+  return points;
+}
+
+async function updateTrendChart() {
+  renderTrendCardBoxes();
+
+  if (compareCards.length === 0) {
+    trendSectionEl.classList.add("hidden");
+    if (trendChart) {
+      trendChart.dispose();
+      trendChart = null;
+    }
+    return;
+  }
+
+  trendSectionEl.classList.remove("hidden");
+  trendTitleEl.textContent = `${activeLabel}: Votes over Time`;
+
+  const series = await Promise.all(compareCards.map(async (card, i) => {
+    const points = await fetchCardHistory(card.id);
+    const color = colorForIndex(i);
+    return {
+      name: card.name,
+      type: "line",
+      showSymbol: true,
+      symbolSize: 5,
+      lineStyle: { color, width: 2 },
+      itemStyle: { color },
+      data: points.map(p => [new Date(p.x).getTime(), p.y]),
+    };
+  }));
+
+  if (!trendChart) {
+    trendChart = echarts.init(document.getElementById("trendChart"));
+    window.addEventListener("resize", () => trendChart && trendChart.resize());
+  }
+
+  trendChart.setOption({
+    tooltip: {
+      trigger: "axis",
+      formatter: params => {
+        const date = new Date(params[0].value[0]).toLocaleString();
+        const lines = params.map(p => `${p.marker} ${p.seriesName}: ${p.value[1]} net votes`);
+        return [date, ...lines].join("<br>");
+      },
+    },
+    grid: { left: 55, right: 20, top: 50, bottom: 30 },
+    xAxis: {
+      type: "value", // NOT "time" -- a plain numeric axis is what gives fully
+                     // symmetric 2D drag/pan in both directions; ECharts'
+                     // special "time" axis type has extra handling that was
+                     // blocking vertical panning specifically.
+      min: "dataMin",
+      max: "dataMax",
+      axisLabel: {
+        formatter: value => new Date(value).toLocaleString([], {
+          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+        }),
+      },
+    },
+    yAxis: {
+      type: "value",
+      name: "Net Votes",
+      nameGap: 30,
+      minInterval: 1,
+      min: 0,
+      max: "dataMax",
+    },
+    dataZoom: [
+      {
+        type: "inside", // scroll wheel = zoom (correctly anchored at the cursor),
+        xAxisIndex: 0,   // click-drag in the plot = pan -- X only, kept as its
+                         // own entry since combining both axes into a single
+                         // wheel gesture was throwing off the zoom's anchor point
+        filterMode: "none",
+      },
+      {
+        type: "inside", // drag directly on the Y-axis number labels (not the
+        yAxisIndex: 0,   // main plot) to pan/zoom vertically -- ECharts treats
+        filterMode: "none", // axis-label-drag as that axis's own dedicated gesture
+      },
+    ],
+    series,
+  }, true); // true = don't merge with previous series (avoids stale lines when cards are removed)
+}
+
+function addCardToCompare(id, name, rank, netPicks) {
+  if (compareCards.some(c => String(c.id) === String(id))) return; // already added
+  compareCards.push({ id, name, rank, netPicks });
+  updateTrendChart();
+}
+
+function removeCardFromCompare(id) {
+  compareCards = compareCards.filter(c => String(c.id) !== String(id));
+  updateTrendChart();
+}
+
+document.getElementById("trend-close").addEventListener("click", () => {
+  compareCards = [];
+  updateTrendChart();
+});
+
+document.getElementById("trend-reset-zoom").addEventListener("click", () => {
+  if (trendChart) trendChart.dispatchAction({ type: "restore" });
+});
 
 async function runSearch() {
   const term = searchBoxEl.value.trim();
@@ -150,6 +330,13 @@ searchBoxEl.addEventListener("input", () => {
   searchDebounce = setTimeout(runSearch, 300); // debounce so we're not firing a query on every keystroke
 });
 
+document.addEventListener("click", (e) => {
+  const searchSection = document.getElementById("search-section");
+  if (!searchSection.contains(e.target)) {
+    searchResultsEl.innerHTML = "";
+  }
+});
+
 function renderPanel(label, rows, categoryTotal) {
   panelEl.innerHTML = "";
 
@@ -179,6 +366,8 @@ function renderPanel(label, rows, categoryTotal) {
 
     const card = document.createElement("div");
     card.className = `podium-card rank-${i + 1}`;
+    card.style.cursor = "pointer";
+    card.title = "Click to add to trend chart";
     card.innerHTML = `
       <div class="medal">${medals[i]}</div>
       <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
@@ -187,6 +376,7 @@ function renderPanel(label, rows, categoryTotal) {
         ${pct}% - ${row.net_picks} Votes
       </div>
     `;
+    card.addEventListener("click", () => addCardToCompare(row.card_id, row.card_name, i + 1, row.net_picks));
     podium.appendChild(card);
   });
   panelEl.appendChild(podium);
@@ -203,6 +393,8 @@ function renderPanel(label, rows, categoryTotal) {
 
       const rowEl = document.createElement("div");
       rowEl.className = "row";
+      rowEl.style.cursor = "pointer";
+      rowEl.title = "Click to add to trend chart";
       rowEl.innerHTML = `
         <div class="rank">#${rank}</div>
         <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
@@ -211,6 +403,7 @@ function renderPanel(label, rows, categoryTotal) {
           ${pct}% - ${row.net_picks} Votes
         </div>
       `;
+      rowEl.addEventListener("click", () => addCardToCompare(row.card_id, row.card_name, rank, row.net_picks));
       list.appendChild(rowEl);
     });
     panelEl.appendChild(list);
@@ -252,6 +445,8 @@ function buildTabs() {
       activeCategory = cat.key;
       activeLabel = cat.label;
       loadCategory(cat.key, cat.label);
+      compareCards = [];
+      updateTrendChart();
       if (searchBoxEl.value.trim().length >= 2) runSearch();
     });
     tabsEl.appendChild(btn);
@@ -266,32 +461,41 @@ async function init() {
 
   statusEl.textContent = "Loading...";
 
-  const { data: maxRows, error: maxError } = await supabaseClient
-    .from("card_tally_view")
-    .select("net_picks")
-    .order("net_picks", { ascending: false })
-    .limit(1);
+  try {
+    const { data: maxRows, error: maxError } = await supabaseClient
+      .from("card_tally_view")
+      .select("net_picks")
+      .order("net_picks", { ascending: false })
+      .limit(1);
 
-  if (maxError) {
-    statusEl.textContent = `Couldn't load analytics: ${maxError.message}`;
-    return;
+    if (maxError) {
+      statusEl.textContent = `Couldn't load analytics: ${maxError.message}`;
+      return;
+    }
+    globalMax = maxRows.length ? maxRows[0].net_picks : 0;
+
+    const { data: totalsData, error: totalsError } = await supabaseClient
+      .from("category_totals_view")
+      .select("category, total_votes");
+
+    if (totalsError) {
+      statusEl.textContent = `Couldn't load analytics: ${totalsError.message}`;
+      return;
+    }
+    totalsData.forEach(row => { totalsByCategory[row.category] = row.total_votes; });
+
+    buildTabs();
+    await loadCategory(CATEGORY_ORDER[0].key, CATEGORY_ORDER[0].label);
+
+    statusEl.textContent = "";
+  } catch (e) {
+    // Catches network-level failures (timeout, CORS, connection refused,
+    // paused project, etc.) that don't come back as a clean Supabase error
+    // object -- without this, a failure here just silently hangs on
+    // "Loading..." forever with nothing visible to debug from.
+    console.error("Analytics failed to load:", e);
+    statusEl.textContent = `Couldn't load analytics (network error): ${e.message || e}`;
   }
-  globalMax = maxRows.length ? maxRows[0].net_picks : 0;
-
-  const { data: totalsData, error: totalsError } = await supabaseClient
-    .from("category_totals_view")
-    .select("category, total_votes");
-
-  if (totalsError) {
-    statusEl.textContent = `Couldn't load analytics: ${totalsError.message}`;
-    return;
-  }
-  totalsData.forEach(row => { totalsByCategory[row.category] = row.total_votes; });
-
-  buildTabs();
-  await loadCategory(CATEGORY_ORDER[0].key, CATEGORY_ORDER[0].label);
-
-  statusEl.textContent = "";
 }
 
 init();
