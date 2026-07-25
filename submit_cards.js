@@ -10,8 +10,7 @@ const CROWDSOURCE_CATEGORIES = [
   { key: "TOWERS", label: "Towers" },
   { key: "BRICKS", label: "Bricks" },
   { key: "BOSSMONSTERS", label: "Boss Monsters" },
-  { key: "DRAWCARDS", label: "Draw Cards" },
-  { key: "FUSIONSUMMONERS", label: "Fusion Summoners" }
+  { key: "DRAWCARDS", label: "Draw Cards" }
   // { key: "ANOTHER_CATEGORY", label: "Another Category" },
 ];
 
