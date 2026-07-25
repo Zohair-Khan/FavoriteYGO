@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Help Build New Categories!</title>
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/icon48.png">
+<link rel="icon" type="image/png" sizes="128x128" href="icons/icon128.png">
+<link rel="icon" type="image/png" sizes="256x256" href="icons/icon256.png">
+<link rel="apple-touch-icon" href="icons/icon128.png">
+<style>
+  body {
+    font-family: Georgia, serif;
+    background: #2b2b2b url("page-bg.jpg") center center / cover no-repeat fixed;
+    color: #eee;
+    padding: 30px 20px;
+    text-align: center;
+  }
+
+  h1 {
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 36px;
+  }
+
+  h1 img.logo-inline {
+    height: 2.0em;
+    width: auto;
+    vertical-align: middle;
+  }
+
+  #subtitle {
+    color: #ddd;
+    font-size: 16px;
+    margin: 0 0 24px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+
+  .cta-button {
+    display: inline-block;
+    background: #333;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 2px solid #d4af37;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .cta-button:hover {
+    background: #4a4a4a;
+  }
+
+  #category-tabs {
+    max-width: 900px;
+    margin: 0 auto 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  #category-tabs button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 2px solid #666;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  #category-tabs button:hover {
+    background: #4a4a4a;
+  }
+
+  #category-tabs button.active {
+    background: #fff;
+    color: #222;
+    border-color: #fff;
+  }
+
+  #search-section {
+    max-width: 600px;
+    margin: 0 auto 20px;
+    position: relative;
+  }
+
+  #search-box {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-family: inherit;
+    border-radius: 8px;
+    border: none;
+    box-sizing: border-box;
+  }
+
+  #search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 0 0 8px 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 10;
+    text-align: left;
+  }
+
+  #search-results:empty {
+    display: none;
+  }
+
+  .search-result-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    color: #222;
+  }
+
+  .search-result-row:hover {
+    background: #f2f2f2;
+  }
+
+  .search-result-row img {
+    width: 32px;
+    border-radius: 3px;
+  }
+
+  .search-result-row .name {
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  #status-card {
+    max-width: 600px;
+    margin: 0 auto 30px;
+    background: rgba(255,255,255,0.97);
+    color: #222;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+  }
+
+  #status-card.hidden {
+    display: none;
+  }
+
+  #status-card .row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  #status-card img {
+    width: 60px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+
+  #status-card .name {
+    font-size: 18px;
+    font-weight: bold;
+    flex: 1;
+  }
+
+  #status-card .message {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  #status-card .message.already {
+    color: #8a6d00;
+  }
+
+  #status-card .message.success {
+    color: #1a7a3c;
+  }
+
+  #status-card .message.error {
+    color: #c0392b;
+  }
+
+  #existing-list {
+    max-width: 900px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.97);
+    color: #222;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+  }
+
+  #existing-list h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  #existing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+  }
+
+  .existing-card {
+    text-align: center;
+  }
+
+  .existing-card img {
+    width: 100%;
+    border-radius: 4px;
+  }
+
+  .existing-card .name {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .empty {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 20px 0;
+  }
+
+  #page-status {
+    color: #ccc;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Help Build New Categories!</h1>
+<p id="subtitle">Search for a card and submit it to a category we're still building out.</p>
+
+<div id="category-tabs"></div>
+
+<div id="search-section">
+  <input type="text" id="search-box" placeholder="Search for a card...">
+  <div id="search-results"></div>
+</div>
+
+<div id="status-card" class="hidden"></div>
+
+<div id="existing-list">
+  <h2 id="existing-title"></h2>
+  <div id="existing-grid"><p class="empty">Loading...</p></div>
+</div>
+
+<p id="page-status"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="card_data.js"></script>
+<script src="card_data_st.js"></script>
+<script src="submit_cards.js"></script>
+</body>
+</html>

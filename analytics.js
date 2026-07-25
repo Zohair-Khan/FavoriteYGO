@@ -169,21 +169,37 @@ function renderTrendCardBoxes() {
 }
 
 async function fetchCardHistory(cardId) {
-  const { data, error } = await supabaseClient
-    .from("card_event_history_view")
-    .select("action, created_at")
-    .eq("category", activeCategory)
-    .eq("card_id", String(cardId))
-    .order("created_at", { ascending: true });
+  // Paginate in chunks rather than trusting one request to return everything --
+  // Supabase's REST API caps how many rows a single request returns, and a
+  // popular card with lots of swap-in/swap-out churn can generate more raw
+  // place/clear events than that cap, silently truncating the tail end
+  // otherwise (this bit us once before with the XYZ category rankings).
+  const PAGE_SIZE = 1000;
+  let allRows = [];
+  let offset = 0;
 
-  if (error) {
-    console.error("Failed to load card history:", error.message);
-    statusEl.textContent = `Trend chart error: ${error.message}`;
-    return [];
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from("card_event_history_view")
+      .select("action, created_at")
+      .eq("category", activeCategory)
+      .eq("card_id", String(cardId))
+      .order("created_at", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Failed to load card history:", error.message);
+      statusEl.textContent = `Trend chart error: ${error.message}`;
+      return [];
+    }
+
+    allRows = allRows.concat(data);
+    if (data.length < PAGE_SIZE) break; // last page was partial -- we're done
+    offset += PAGE_SIZE;
   }
 
   let running = 0;
-  const points = data.map(row => {
+  const points = allRows.map(row => {
     running += row.action === "place" ? 1 : -1;
     return { x: row.created_at, y: running };
   });
@@ -226,6 +242,14 @@ async function updateTrendChart() {
     };
   }));
 
+  // Compute the real max ourselves rather than relying on ECharts' "dataMax"
+  // string keyword, which can get stuck at a stale value across repeated
+  // setOption calls (e.g. after adding/removing cards) instead of properly
+  // recomputing from the current series every time.
+  const allYValues = series.flatMap(s => s.data.map(p => p[1]));
+  const realMaxY = allYValues.length ? Math.max(...allYValues) : 1;
+  const yAxisMax = Math.ceil(realMaxY * 1.1); // small headroom above the tallest line
+
   if (!trendChart) {
     trendChart = echarts.init(document.getElementById("trendChart"));
     window.addEventListener("resize", () => trendChart && trendChart.resize());
@@ -260,7 +284,7 @@ async function updateTrendChart() {
       nameGap: 30,
       minInterval: 1,
       min: 0,
-      max: "dataMax",
+      max: yAxisMax,
     },
     dataZoom: [
       {
