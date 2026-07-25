@@ -11,7 +11,7 @@ const CROWDSOURCE_CATEGORIES = [
   { key: "BRICKS", label: "Bricks" },
   { key: "BOSSMONSTERS", label: "Boss Monsters" },
   { key: "DRAWCARDS", label: "Draw Cards" },
-  { key: "FUSIONSPELLS", label: "Fusion Spells" }
+  { key: "FUSIONSUMMONERS", label: "Fusion Summoners" }
   // { key: "ANOTHER_CATEGORY", label: "Another Category" },
 ];
 
