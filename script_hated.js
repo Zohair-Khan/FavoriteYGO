@@ -1,16 +1,26 @@
 // The 15 boxes, matching hated.png's layout. left/top/width/height are
 // percentages measured from the template's card-back slots -- SAME
 // coordinates as the other two pickers (same template image dimensions).
+//
+// IMPORTANT: 8 of these use a "HATED_" prefix on their key (HATED_NORMAL,
+// etc.) even though the underlying card DATA they show is the exact same
+// Normal/Effect/Ritual/etc. categories the Favorite Monster picker uses.
+// This is deliberate -- click_events' "category" column is a flat string
+// shared across every page on the site, so if this page logged clicks under
+// plain "NORMAL"/"EFFECT"/etc., votes for "Most Hated Normal Monster" would
+// get mixed in with "Favorite Normal Monster" votes from index.html,
+// indistinguishably. The prefix keeps them separate for analytics purposes;
+// getStoredList() below still maps back to the original data category.
 const CATEGORY_LAYOUT = [
-  { key: "NORMAL",           label: "Normal",          left: 10.208, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "EFFECT",           label: "Effect",          left: 26.823, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "RITUAL",           label: "Ritual",          left: 43.438, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "FUSION",           label: "Fusion",          left: 60.104, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "SYNCHRO",          label: "Synchro",         left: 76.667, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "HATED_NORMAL",     label: "Normal",          left: 10.208, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "HATED_EFFECT",     label: "Effect",          left: 26.823, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "HATED_RITUAL",     label: "Ritual",          left: 43.438, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "HATED_FUSION",     label: "Fusion",          left: 60.104, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "HATED_SYNCHRO",    label: "Synchro",         left: 76.667, top: 15.149, width: 13.073, height: 25.434 },
 
-  { key: "XYZ",              label: "Xyz",             left: 10.208, top: 43.850, width: 13.073, height: 25.365 },
-  { key: "LINK",             label: "Link",            left: 26.823, top: 43.850, width: 13.073, height: 25.365 },
-  { key: "PENDULUM",         label: "Pendulum",        left: 43.438, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "HATED_XYZ",        label: "Xyz",             left: 10.208, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "HATED_LINK",       label: "Link",            left: 26.823, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "HATED_PENDULUM",   label: "Pendulum",        left: 43.438, top: 43.850, width: 13.073, height: 25.365 },
   { key: "HANDTRAP",         label: "Handtrap",        left: 60.104, top: 43.850, width: 13.073, height: 25.365 },
   { key: "TOWER",            label: "Tower",           left: 76.667, top: 43.850, width: 13.073, height: 25.365 },
 
@@ -73,20 +83,36 @@ function dedupeById(...lists) {
   return Array.from(seen.values());
 }
 
+// Maps a box's tracking key (used for click logging/localStorage/DOM
+// identity) to the underlying data category it should actually pull cards
+// from -- only needed where they differ (the 8 renamed-for-collision keys).
+const DATA_KEY_OVERRIDES = {
+  HATED_NORMAL: "NORMAL",
+  HATED_EFFECT: "EFFECT",
+  HATED_RITUAL: "RITUAL",
+  HATED_FUSION: "FUSION",
+  HATED_SYNCHRO: "SYNCHRO",
+  HATED_XYZ: "XYZ",
+  HATED_LINK: "LINK",
+  HATED_PENDULUM: "PENDULUM",
+};
+
 function getStoredList(key) {
+  const dataKey = DATA_KEY_OVERRIDES[key] || key;
+
   // "Spell"/"Trap" aren't stored as their own combined category anywhere --
   // built here from the sub-categories that already exist in card_data_st.js.
-  if (key === "SPELL") {
+  if (dataKey === "SPELL") {
     const st = window.CARD_DATA_ST || {};
     return dedupeById(st.SPELL_NORMAL, st.SPELL_CONTINUOUS, st.EQUIP, st.QUICKPLAY, st.FIELD, st.RITUAL_SPELL);
   }
-  if (key === "TRAP") {
+  if (dataKey === "TRAP") {
     const st = window.CARD_DATA_ST || {};
     return dedupeById(st.TRAP_NORMAL, st.TRAP_CONTINUOUS, st.COUNTER);
   }
-  if (window.CARD_DATA && window.CARD_DATA[key]) return window.CARD_DATA[key];
-  if (window.CARD_DATA_ST && window.CARD_DATA_ST[key]) return window.CARD_DATA_ST[key];
-  if (window.CARD_DATA_SPECIAL && window.CARD_DATA_SPECIAL[key]) return window.CARD_DATA_SPECIAL[key];
+  if (window.CARD_DATA && window.CARD_DATA[dataKey]) return window.CARD_DATA[dataKey];
+  if (window.CARD_DATA_ST && window.CARD_DATA_ST[dataKey]) return window.CARD_DATA_ST[dataKey];
+  if (window.CARD_DATA_SPECIAL && window.CARD_DATA_SPECIAL[dataKey]) return window.CARD_DATA_SPECIAL[dataKey];
   return [];
 }
 

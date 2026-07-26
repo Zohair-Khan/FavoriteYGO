@@ -34,6 +34,22 @@ const CATEGORY_ORDER = [
   { key: "POT", label: "\"Pot\"" },
   { key: "SOLEMN", label: "\"Solemn\"" },
   { key: "DOMINUS", label: "\"Dominus\"" },
+
+  { key: "HATED_NORMAL", label: "Hated Normal" },
+  { key: "HATED_EFFECT", label: "Hated Effect" },
+  { key: "HATED_RITUAL", label: "Hated Ritual" },
+  { key: "HATED_FUSION", label: "Hated Fusion" },
+  { key: "HATED_SYNCHRO", label: "Hated Synchro" },
+  { key: "HATED_XYZ", label: "Hated Xyz" },
+  { key: "HATED_LINK", label: "Hated Link" },
+  { key: "HATED_PENDULUM", label: "Hated Pendulum" },
+  { key: "SPELL", label: "Hated Spell" },
+  { key: "TRAP", label: "Hated Trap" },
+  { key: "FLOODGATE", label: "Hated Floodgate" },
+  { key: "HANDTRAP", label: "Hated Handtrap" },
+  { key: "TOWER", label: "Hated Tower" },
+  { key: "ONE_CARD_STARTER", label: "Hated 1-Card Starter" },
+  { key: "MOST_HATED", label: "Most Hated" },
 ];
 
 const TOP_N_PER_CATEGORY = 10;
