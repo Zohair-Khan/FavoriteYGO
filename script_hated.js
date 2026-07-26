@@ -2,23 +2,23 @@
 // percentages measured from the template's card-back slots -- SAME
 // coordinates as the other two pickers (same template image dimensions).
 const CATEGORY_LAYOUT = [
-  { key: "NORMAL",         label: "Normal",       left: 10.208, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "EFFECT",         label: "Effect",       left: 26.823, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "RITUAL",         label: "Ritual",       left: 43.438, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "FUSION",         label: "Fusion",       left: 60.104, top: 15.149, width: 13.073, height: 25.434 },
-  { key: "SYNCHRO",        label: "Synchro",      left: 76.667, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "NORMAL",           label: "Normal",          left: 10.208, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "EFFECT",           label: "Effect",          left: 26.823, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "RITUAL",           label: "Ritual",          left: 43.438, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "FUSION",           label: "Fusion",          left: 60.104, top: 15.149, width: 13.073, height: 25.434 },
+  { key: "SYNCHRO",          label: "Synchro",         left: 76.667, top: 15.149, width: 13.073, height: 25.434 },
 
-  { key: "XYZ",            label: "Xyz",          left: 10.208, top: 43.850, width: 13.073, height: 25.365 },
-  { key: "LINK",           label: "Link",         left: 26.823, top: 43.850, width: 13.073, height: 25.365 },
-  { key: "PENDULUM",       label: "Pendulum",     left: 43.438, top: 43.850, width: 13.073, height: 25.365 },
-  { key: "FLOODGATE",      label: "Floodgate",    left: 60.104, top: 43.850, width: 13.073, height: 25.365 },
-  { key: "HANDTRAP",       label: "Handtrap",     left: 76.667, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "XYZ",              label: "Xyz",             left: 10.208, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "LINK",             label: "Link",            left: 26.823, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "PENDULUM",         label: "Pendulum",        left: 43.438, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "HANDTRAP",         label: "Handtrap",        left: 60.104, top: 43.850, width: 13.073, height: 25.365 },
+  { key: "TOWER",            label: "Tower",           left: 76.667, top: 43.850, width: 13.073, height: 25.365 },
 
-  { key: "BANNED_MONSTER", label: "Banned Mon.",  left: 10.208, top: 72.481, width: 13.073, height: 25.434 },
-  { key: "BANNED_SPELL",   label: "Banned Spell", left: 26.823, top: 72.481, width: 13.073, height: 25.434 },
-  { key: "BANNED_TRAP",    label: "Banned Trap",  left: 43.438, top: 72.481, width: 13.073, height: 25.434 },
-  { key: "TOWER",          label: "Tower",        left: 60.104, top: 72.481, width: 13.073, height: 25.434 },
-  { key: "MOST_HATED",     label: "Most Hated",   left: 76.667, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "SPELL",            label: "Spell",           left: 10.208, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "TRAP",             label: "Trap",            left: 26.823, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "FLOODGATE",        label: "Floodgate",       left: 43.438, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "ONE_CARD_STARTER", label: "1-Card Starter",  left: 60.104, top: 72.481, width: 13.073, height: 25.434 },
+  { key: "MOST_HATED",       label: "Most Hated",      left: 76.667, top: 72.481, width: 13.073, height: 25.434 },
 ];
 
 const grid = document.getElementById("grid");
@@ -67,7 +67,23 @@ function restorePicksFromStorage() {
 // actually lives in (monster categories in CARD_DATA, spell/trap in
 // CARD_DATA_ST, cross-type ones in CARD_DATA_SPECIAL) -- this just checks
 // all three so the rest of the code doesn't need to know which.
+function dedupeById(...lists) {
+  const seen = new Map();
+  lists.forEach(list => (list || []).forEach(card => seen.set(String(card.id), card)));
+  return Array.from(seen.values());
+}
+
 function getStoredList(key) {
+  // "Spell"/"Trap" aren't stored as their own combined category anywhere --
+  // built here from the sub-categories that already exist in card_data_st.js.
+  if (key === "SPELL") {
+    const st = window.CARD_DATA_ST || {};
+    return dedupeById(st.SPELL_NORMAL, st.SPELL_CONTINUOUS, st.EQUIP, st.QUICKPLAY, st.FIELD, st.RITUAL_SPELL);
+  }
+  if (key === "TRAP") {
+    const st = window.CARD_DATA_ST || {};
+    return dedupeById(st.TRAP_NORMAL, st.TRAP_CONTINUOUS, st.COUNTER);
+  }
   if (window.CARD_DATA && window.CARD_DATA[key]) return window.CARD_DATA[key];
   if (window.CARD_DATA_ST && window.CARD_DATA_ST[key]) return window.CARD_DATA_ST[key];
   if (window.CARD_DATA_SPECIAL && window.CARD_DATA_SPECIAL[key]) return window.CARD_DATA_SPECIAL[key];
@@ -101,6 +117,7 @@ function getCurrentSelections() {
 
 function getListFor(key) {
   if (key === "MOST_HATED") return getCurrentSelections();
+  if (key === "ONE_CARD_STARTER") return getAllCardsFlat(); // no restriction at all -- pick from anything
   return getStoredList(key);
 }
 
@@ -187,13 +204,26 @@ clearBtn.addEventListener("click", () => {
   updateClearBtnState();
 });
 
+const BATCH_SIZE = 60;
+let currentFullList = [];
+let renderedCount = 0;
+
 function renderCardList(list) {
+  currentFullList = list;
+  renderedCount = 0;
   cardList.innerHTML = "";
+
   if (list.length === 0) {
     cardList.innerHTML = "<p style='padding:12px;'>Nothing to pick from yet — fill in some of the other boxes first.</p>";
     return;
   }
-  list.forEach(card => {
+
+  renderNextBatch();
+}
+
+function renderNextBatch() {
+  const nextItems = currentFullList.slice(renderedCount, renderedCount + BATCH_SIZE);
+  nextItems.forEach(card => {
     const img = document.createElement("img");
     img.src = `images/${card.id}.jpg`;
     img.alt = card.name;
@@ -205,7 +235,17 @@ function renderCardList(list) {
     });
     cardList.appendChild(img);
   });
+  renderedCount += nextItems.length;
 }
+
+// Load the next batch automatically once the user scrolls near the bottom --
+// keeps the DOM light (never much more than one batch beyond what's visible)
+// while still making the entire list reachable by scrolling.
+cardList.addEventListener("scroll", () => {
+  if (renderedCount >= currentFullList.length) return; // already showing everything
+  const nearBottom = cardList.scrollTop + cardList.clientHeight >= cardList.scrollHeight - 300;
+  if (nearBottom) renderNextBatch();
+});
 
 // Only these categories open up to the FULL card database while searching --
 // they're the ones built from best-effort text filters (Floodgate, Handtrap,
@@ -213,7 +253,7 @@ function renderCardList(list) {
 // search escape hatch matters in case a filter missed a real card. The other
 // 11 categories are reliably classified from structural API fields
 // (frameType, banlist status), so they stay restricted even while searching.
-const OPEN_SEARCH_KEYS = new Set(["FLOODGATE", "HANDTRAP", "TOWER", "MOST_HATED"]);
+const OPEN_SEARCH_KEYS = new Set(["FLOODGATE", "HANDTRAP", "TOWER", "ONE_CARD_STARTER", "MOST_HATED"]);
 
 searchBox.addEventListener("input", () => {
   const term = searchBox.value.toLowerCase();
