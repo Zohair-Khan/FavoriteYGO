@@ -225,6 +225,27 @@
 
   .existing-card {
     text-align: center;
+    position: relative;
+  }
+
+  .existing-card .remove-btn {
+    display: none;
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  body.admin-mode .existing-card .remove-btn {
+    display: block;
   }
 
   .existing-card img {
@@ -254,6 +275,7 @@
 
 <h1>Help Build New Categories!</h1>
 <p id="subtitle">Search for a card and submit it to a category we're still building out.</p>
+<p style="margin: 0 0 20px;"><a href="#" id="admin-toggle" style="color:#999; font-size:12px; text-decoration:underline;">admin</a></p>
 
 <div id="category-tabs"></div>
 

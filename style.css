@@ -18,6 +18,10 @@ body {
   background-image: url("templateST.png");
 }
 
+.grid-hated {
+  background-image: url("hated.png");
+}
+
 .box {
   position: absolute;
   cursor: pointer;

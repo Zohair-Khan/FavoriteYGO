@@ -93,6 +93,7 @@ searchBoxEl.addEventListener("input", () => {
     const matches = ALL_CARDS
       .filter(c => c.name.toLowerCase().includes(term))
       .filter(c => !submittedIds.has(String(c.id))) // already-submitted cards show in the list below instead
+      .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 30);
     renderSearchResults(matches);
   }, 200);
@@ -212,7 +213,7 @@ async function loadExistingSubmissions() {
     .from("category_submissions_view")
     .select("card_id, card_name")
     .eq("category", activeCategory)
-    .order("submitted_at", { ascending: false });
+    .order("card_name", { ascending: true });
 
   if (error) {
     existingGridEl.innerHTML = `<p class="empty">Couldn't load: ${error.message}</p>`;
@@ -246,9 +247,55 @@ function renderExistingSubmissions(term) {
     el.innerHTML = `
       <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
       <div class="name">${row.card_name}</div>
+      <button class="remove-btn" title="Remove from this category">&times;</button>
     `;
+    el.querySelector(".remove-btn").addEventListener("click", () => removeSubmission(row));
     existingGridEl.appendChild(el);
   });
+}
+
+// --- Admin mode: a light UI deterrent, NOT real security. The public anon
+// key can technically call the delete endpoint directly regardless of this
+// gate -- this just keeps the remove buttons from being visible/obvious to
+// casual visitors. Change this password to whatever you like.
+const ADMIN_PASSWORD = "changeme";
+
+document.getElementById("admin-toggle").addEventListener("click", (e) => {
+  e.preventDefault();
+  if (document.body.classList.contains("admin-mode")) {
+    document.body.classList.remove("admin-mode");
+    return;
+  }
+  const attempt = prompt("Admin password:");
+  if (attempt === ADMIN_PASSWORD) {
+    document.body.classList.add("admin-mode");
+  } else if (attempt !== null) {
+    alert("Wrong password.");
+  }
+});
+
+async function removeSubmission(row) {
+  if (!confirm(`Remove "${row.card_name}" from "${activeLabel}"?`)) return;
+
+  const { error, count } = await supabaseClient
+    .from("category_submissions")
+    .delete({ count: "exact" })
+    .eq("category", activeCategory)
+    .eq("card_id", String(row.card_id));
+
+  console.log("Delete result:", { error, count, category: activeCategory, card_id: row.card_id });
+
+  if (error) {
+    alert(`Couldn't remove: ${error.message}`);
+    return;
+  }
+
+  if (!count) {
+    alert("Nothing was actually deleted (0 rows matched). This usually means the DELETE policy isn't set up yet -- check the console for the exact filter values used, and confirm add_delete_policy.sql has been run in Supabase.");
+    return;
+  }
+
+  loadExistingSubmissions(); // refresh the grid
 }
 
 function init() {

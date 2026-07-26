@@ -18,6 +18,7 @@ Requirements: pip install requests
 
 import json
 import os
+import re
 import sys
 import time
 import requests
@@ -26,6 +27,7 @@ API_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 IMG_DIR = "images"
 OUTPUT_JS_MONSTERS = "card_data.js"
 OUTPUT_JS_SPELLS_TRAPS = "card_data_st.js"
+OUTPUT_JS_SPECIAL = "card_data_special.js"
 
 # Pass a number as the first argument to only process that many cards of
 # EACH kind (monsters, spells/traps) -- e.g.:   python fetch_and_build.py 100
@@ -74,12 +76,14 @@ monster_categories = {
     "SYNCHRO": [], "FUSION": [], "RITUAL": [],
     "NORMAL": [], "GEMINI": [], "EFFECT": [],
     "TOON": [], "SPIRIT": [], "UNION": [],
-    "FLIP": [], "TUNER": [],
+    "FLIP": [], "TUNER": [], "TOWER": [], "BANNED_MONSTER": [],
 }
 
 for card in monsters:
     ctype = card["type"]                # e.g. "Effect Monster", "Tuner Monster"
     frame = card.get("frameType", "")   # e.g. "normal", "effect", "xyz_pendulum"
+    desc = card.get("desc", "")
+    ban_tcg = card.get("banlist_info", {}).get("ban_tcg")
     entries = make_entries(card)
 
     # --- The 8 main frame-based categories ---
@@ -125,6 +129,14 @@ for card in monsters:
     if "Flip" in ctype:
         monster_categories["FLIP"].extend(entries)
 
+    # "Tower" -- any monster whose text includes "unaffected by"
+    if "unaffected by" in desc.lower():
+        monster_categories["TOWER"].extend(entries)
+
+    # Currently Forbidden on the TCG banlist
+    if ban_tcg == "Forbidden":
+        monster_categories["BANNED_MONSTER"].extend(entries)
+
 for k, v in monster_categories.items():
     print(f"{k}: {len(v)} cards")
 
@@ -142,7 +154,7 @@ st_categories = {
     "SPELL_NORMAL": [], "SPELL_CONTINUOUS": [], "EQUIP": [],
     "QUICKPLAY": [], "FIELD": [], "RITUAL_SPELL": [],
     "TRAP_NORMAL": [], "TRAP_CONTINUOUS": [], "COUNTER": [],
-    "BANNED": [],
+    "BANNED": [], "BANNED_SPELL": [], "BANNED_TRAP": [],
     "FORBIDDEN": [], "POT": [], "SOLEMN": [], "DOMINUS": [],
 }
 
@@ -190,6 +202,10 @@ for card in spells_traps:
 
     if ban_tcg == "Forbidden":
         st_categories["BANNED"].extend(entries)
+        if is_spell:
+            st_categories["BANNED_SPELL"].extend(entries)
+        if is_trap:
+            st_categories["BANNED_TRAP"].extend(entries)
 
 print()
 for k, v in st_categories.items():
@@ -197,11 +213,103 @@ for k, v in st_categories.items():
 
 
 # ============================================================
-# IMAGES -- one combined pass across both pickers' categories
+# SPECIAL / CROSS-TYPE CATEGORIES
+# These can be Monsters, Spells, OR Traps -- not confined to one or the
+# other -- so they're built from the full card list, not the
+# monsters/spells_traps subsets above.
+# ============================================================
+all_cards_for_special = all_cards[:LIMIT] if LIMIT else all_cards
+
+special_categories = {
+    "FUSIONSUMMONERS": [],
+    "FLOODGATE": [],
+    "HANDTRAP": [],
+}
+
+
+def is_valid_type_for_special(card):
+    # Monsters, Spells, or Traps only -- excludes Skill Cards and anything else.
+    return "Monster" in card.get("type", "") or card.get("type") in ("Spell Card", "Trap Card")
+
+
+# --- Flood Gates: same regex/exclusion logic as submit_floodgates.py ---
+FLOODGATE_REGEX = re.compile(
+    r"(neither player can|your opponent cannot|both players must|each player can only)(?!\s*target this card)",
+    re.IGNORECASE,
+)
+
+
+def is_floodgate_match(desc):
+    # Sentence-scoped (split on periods) so the damage-step exclusion below
+    # only rules out the specific clause it applies to, not the whole card.
+    for sentence in desc.split("."):
+        if "until the end of the damage step" in sentence.lower():
+            continue  # temporary, damage-step-only restriction -- not a real flood gate
+        if FLOODGATE_REGEX.search(sentence):
+            return True
+    return False
+
+
+# --- Hand Traps: same filters as submit_handtraps.py ---
+def is_effect_monster_for_hand(card):
+    frame = card.get("frameType", "")
+    return frame.replace("_pendulum", "") == "effect"
+
+
+def is_trap_for_hand(card):
+    return card.get("type") == "Trap Card"
+
+
+def hand_trap_text_matches(desc, pattern):
+    parts = [re.escape(p) for p in pattern.split("*")]
+    regex_str = ".*?".join(parts)
+    sentences = desc.split(".")
+    return any(re.search(regex_str, s, re.IGNORECASE | re.DOTALL) for s in sentences)
+
+
+HANDTRAP_FILTERS = [
+    (is_effect_monster_for_hand, ": you can discard this"),
+    (is_effect_monster_for_hand, ": you can send this card*from your hand*;"),
+    (is_effect_monster_for_hand, "(quick effect):*;*special summon this card*hand"),
+    (is_effect_monster_for_hand, "(quick effect):*special summon this card*hand"),
+    (is_effect_monster_for_hand, "during either player's turn*:*;*special summon this card*hand"),
+    (is_effect_monster_for_hand, "during either player's turn*:*special summon this card*hand"),
+    (is_effect_monster_for_hand, "if this card is in your hand (quick effect):"),
+    (is_effect_monster_for_hand, "if this card is in your hand or gy (quick effect):"),
+    (is_effect_monster_for_hand, "turn, if this card is in your hand"),
+    (is_trap_for_hand, "you can activate this card from your hand"),
+]
+
+for card in all_cards_for_special:
+    desc = card.get("desc", "")
+    entries = make_entries(card)
+
+    # Cards that can Fusion Summon by their own effect all use this exact
+    # templated phrase in their text, regardless of whether they're a
+    # Monster, Spell, or Trap -- e.g. "You can Fusion Summon 1 [...] Fusion
+    # Monster using monsters from your hand or field as material."
+    if "Fusion Summon 1" in desc:
+        special_categories["FUSIONSUMMONERS"].extend(entries)
+
+    if is_valid_type_for_special(card) and is_floodgate_match(desc):
+        special_categories["FLOODGATE"].extend(entries)
+
+    for type_check, pattern in HANDTRAP_FILTERS:
+        if type_check(card) and hand_trap_text_matches(desc, pattern):
+            special_categories["HANDTRAP"].extend(entries)
+            break  # only need to add it once, regardless of how many filters match
+
+print()
+for k, v in special_categories.items():
+    print(f"{k}: {len(v)} cards")
+
+
+# ============================================================
+# IMAGES -- one combined pass across all three pickers' categories
 # ============================================================
 seen_ids = {str(cid) for cid in (
     entry["id"]
-    for cat_list in list(monster_categories.values()) + list(st_categories.values())
+    for cat_list in list(monster_categories.values()) + list(st_categories.values()) + list(special_categories.values())
     for entry in cat_list
 )}
 
@@ -258,4 +366,10 @@ with open(OUTPUT_JS_SPELLS_TRAPS, "w", encoding="utf-8") as f:
     json.dump(st_categories, f)
     f.write(";\n")
 
-print(f"\nDone. Wrote {OUTPUT_JS_MONSTERS}, {OUTPUT_JS_SPELLS_TRAPS}, and images/ folder.")
+with open(OUTPUT_JS_SPECIAL, "w", encoding="utf-8") as f:
+    f.write("// Auto-generated by fetch_and_build.py\n")
+    f.write("window.CARD_DATA_SPECIAL = ")
+    json.dump(special_categories, f)
+    f.write(";\n")
+
+print(f"\nDone. Wrote {OUTPUT_JS_MONSTERS}, {OUTPUT_JS_SPELLS_TRAPS}, {OUTPUT_JS_SPECIAL}, and images/ folder.")
