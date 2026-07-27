@@ -75,6 +75,28 @@ function getAllCardsFlat() {
   return Array.from(seen.values());
 }
 
+// Maps every known card/artwork id -> its base (original artwork) id/name.
+// Votes for any alt art get logged against this base card instead of the
+// specific artwork, so a card's popularity doesn't fragment across its
+// different artworks -- while the box itself still DISPLAYS whichever
+// specific artwork was actually clicked.
+function buildIdToBaseMap() {
+  const map = {};
+  Object.values(window.CARD_DATA || {}).forEach(list => {
+    list.forEach(card => {
+      if (card.baseId !== undefined) {
+        map[String(card.id)] = { id: card.baseId, name: card.baseName };
+      }
+    });
+  });
+  return map;
+}
+const ID_TO_BASE = buildIdToBaseMap();
+
+function resolveBaseCard(id, name) {
+  return ID_TO_BASE[String(id)] || { id, name };
+}
+
 // Overall Favorite only offers cards you've already placed in the other 14 boxes
 function getCurrentSelections() {
   const seen = new Map();
@@ -111,6 +133,7 @@ restorePicksFromStorage();
 // and by restoring saved picks on page load (which shouldn't count as a new click).
 function renderBoxImage(key, card) {
   const box = grid.querySelector(`.box[data-key="${key}"]`);
+  if (!box) return; // stale saved key that no longer matches any box
   let img = box.querySelector("img");
   if (!img) {
     img = document.createElement("img");
@@ -131,13 +154,23 @@ function setBoxImage(key, card) {
   const prevId = box.dataset.cardId;
   const prevName = box.dataset.cardName;
 
-  if (prevId && String(prevId) !== String(card.id)) {
-    logClickEvent(key, { id: prevId, name: prevName }, "clear");
+  const newBase = resolveBaseCard(card.id, card.name);
+  const prevBase = prevId ? resolveBaseCard(prevId, prevName) : null;
+  // If someone swaps between two artworks of the SAME card they already had
+  // selected, that's not a new vote -- just a display choice -- so no
+  // clear/place gets logged at all in that case.
+  const baseChanged = !prevBase || String(prevBase.id) !== String(newBase.id);
+
+  if (prevBase && baseChanged) {
+    logClickEvent(key, prevBase, "clear");
   }
 
   renderBoxImage(key, card);
   savePicksToStorage();
-  logClickEvent(key, card, "place");
+
+  if (baseChanged) {
+    logClickEvent(key, newBase, "place");
+  }
 }
 
 // Remove whatever's currently in a box (used by the Clear button).
@@ -145,7 +178,7 @@ function clearBoxImage(key) {
   const box = grid.querySelector(`.box[data-key="${key}"]`);
   if (!box.dataset.cardId) return; // nothing selected, nothing to clear
 
-  const card = { id: box.dataset.cardId, name: box.dataset.cardName };
+  const card = resolveBaseCard(box.dataset.cardId, box.dataset.cardName);
   const img = box.querySelector("img");
   if (img) img.remove();
   delete box.dataset.cardId;
@@ -175,13 +208,26 @@ clearBtn.addEventListener("click", () => {
   updateClearBtnState();
 });
 
+const BATCH_SIZE = 60;
+let currentFullList = [];
+let renderedCount = 0;
+
 function renderCardList(list) {
+  currentFullList = list;
+  renderedCount = 0;
   cardList.innerHTML = "";
+
   if (list.length === 0) {
     cardList.innerHTML = "<p style='padding:12px;'>Nothing to pick from yet — fill in some of the other boxes first.</p>";
     return;
   }
-  list.forEach(card => {
+
+  renderNextBatch();
+}
+
+function renderNextBatch() {
+  const nextItems = currentFullList.slice(renderedCount, renderedCount + BATCH_SIZE);
+  nextItems.forEach(card => {
     const img = document.createElement("img");
     img.src = `images/${card.id}.jpg`;
     img.alt = card.name;
@@ -193,7 +239,16 @@ function renderCardList(list) {
     });
     cardList.appendChild(img);
   });
+  renderedCount += nextItems.length;
 }
+
+// Load the next batch automatically once the user scrolls near the bottom --
+// keeps the DOM light while still making the entire list reachable.
+cardList.addEventListener("scroll", () => {
+  if (renderedCount >= currentFullList.length) return;
+  const nearBottom = cardList.scrollTop + cardList.clientHeight >= cardList.scrollHeight - 300;
+  if (nearBottom) renderNextBatch();
+});
 
 searchBox.addEventListener("input", () => {
   const term = searchBox.value.toLowerCase();
@@ -321,7 +376,11 @@ async function logClickEvent(category, card, action) {
       card_name: card.name,
       action, // "place" or "clear"
     });
-    if (error) console.error("click_events insert failed:", error.message);
+    if (error) {
+      console.error("click_events insert failed:", error.message);
+    } else {
+      console.log(`click_events logged: ${action} - ${category} - ${card.name}`);
+    }
   } catch (e) {
     console.error("click_events insert failed:", e);
   }

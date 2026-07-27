@@ -128,6 +128,28 @@ function getAllCardsFlat() {
   return Array.from(seen.values());
 }
 
+// Maps every known card/artwork id -> its base (original artwork) id/name --
+// votes for any alt art get logged against this base card, while the box
+// still displays whichever specific artwork was actually clicked.
+function buildIdToBaseMap() {
+  const map = {};
+  [window.CARD_DATA, window.CARD_DATA_ST, window.CARD_DATA_SPECIAL].forEach(dataset => {
+    Object.values(dataset || {}).forEach(list => {
+      list.forEach(card => {
+        if (card.baseId !== undefined) {
+          map[String(card.id)] = { id: card.baseId, name: card.baseName };
+        }
+      });
+    });
+  });
+  return map;
+}
+const ID_TO_BASE = buildIdToBaseMap();
+
+function resolveBaseCard(id, name) {
+  return ID_TO_BASE[String(id)] || { id, name };
+}
+
 // "Most Hated" only offers cards you've already placed in the other 14 boxes
 // by default (search still opens to everything, same as every other box here)
 function getCurrentSelections() {
@@ -166,6 +188,7 @@ restorePicksFromStorage();
 // and by restoring saved picks on page load (which shouldn't count as a new click).
 function renderBoxImage(key, card) {
   const box = grid.querySelector(`.box[data-key="${key}"]`);
+  if (!box) return; // stale saved key from before a category rename -- nothing to restore it into
   let img = box.querySelector("img");
   if (!img) {
     img = document.createElement("img");
@@ -186,13 +209,20 @@ function setBoxImage(key, card) {
   const prevId = box.dataset.cardId;
   const prevName = box.dataset.cardName;
 
-  if (prevId && String(prevId) !== String(card.id)) {
-    logClickEvent(key, { id: prevId, name: prevName }, "clear");
+  const newBase = resolveBaseCard(card.id, card.name);
+  const prevBase = prevId ? resolveBaseCard(prevId, prevName) : null;
+  const baseChanged = !prevBase || String(prevBase.id) !== String(newBase.id);
+
+  if (prevBase && baseChanged) {
+    logClickEvent(key, prevBase, "clear");
   }
 
   renderBoxImage(key, card);
   savePicksToStorage();
-  logClickEvent(key, card, "place");
+
+  if (baseChanged) {
+    logClickEvent(key, newBase, "place");
+  }
 }
 
 // Remove whatever's currently in a box (used by the Clear button).
@@ -200,7 +230,7 @@ function clearBoxImage(key) {
   const box = grid.querySelector(`.box[data-key="${key}"]`);
   if (!box.dataset.cardId) return; // nothing selected, nothing to clear
 
-  const card = { id: box.dataset.cardId, name: box.dataset.cardName };
+  const card = resolveBaseCard(box.dataset.cardId, box.dataset.cardName);
   const img = box.querySelector("img");
   if (img) img.remove();
   delete box.dataset.cardId;

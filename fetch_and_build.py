@@ -49,16 +49,30 @@ print(f"Got {len(all_cards)} total cards.")
 def make_entries(card):
     """card_images holds one entry per artwork (default art is always index 0;
     anything after that is alternate art). Each has its own "id" -- that's
-    what the image filename/URL is built from, NOT the card's main "id"."""
+    what the image filename/URL is built from, NOT the card's main "id".
+
+    Every entry also carries "baseId"/"baseName" pointing back to the
+    ORIGINAL (index 0) artwork's id/name -- for the original itself these
+    just point to itself. This lets the front-end show whichever specific
+    artwork someone actually picks, while logging their vote against the
+    original card, so votes for a card don't get fragmented across its
+    different artworks."""
     images = card.get("card_images", [{"id": card["id"]}])
     if not INCLUDE_ALT_ART:
         images = images[:1]
+    base_id = images[0]["id"]
+    base_name = card["name"]
     entries = []
     for idx, img in enumerate(images):
         name = card["name"]
         if len(images) > 1 and idx > 0:
             name = f"{name} (Alt Art {idx})"
-        entries.append({"name": name, "id": img["id"]})
+        entries.append({
+            "name": name,
+            "id": img["id"],
+            "baseId": base_id,
+            "baseName": base_name,
+        })
     return entries
 
 
