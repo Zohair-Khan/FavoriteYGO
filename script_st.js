@@ -97,6 +97,18 @@ function resolveBaseCard(id, name) {
   return ID_TO_BASE[String(id)] || { id, name };
 }
 
+// Matches against the English name as usual, PLUS Japanese/Korean
+// names+romanizations (from card_names_i18n.js, keyed by baseId) -- lets
+// someone search in whatever language they actually know the card by,
+// without needing any language toggle or changing what's displayed.
+function cardMatchesSearch(card, term) {
+  if (card.name.toLowerCase().includes(term)) return true;
+  const i18n = (window.CARD_NAMES_I18N || {})[String(card.baseId ?? card.id)];
+  if (!i18n) return false;
+  return [i18n.ja_name, i18n.ja_romaji, i18n.ko_name, i18n.ko_romaji]
+    .some(n => n && n.toLowerCase().includes(term));
+}
+
 // Favorite S/T only offers cards you've already placed in the other 14 boxes
 function getCurrentSelections() {
   const seen = new Map();
@@ -255,7 +267,7 @@ searchBox.addEventListener("input", () => {
     ? getAllCardsFlat()
     : getListFor(activeBoxKey);
 
-  renderCardList(term ? base.filter(c => c.name.toLowerCase().includes(term)) : base);
+  renderCardList(term ? base.filter(c => cardMatchesSearch(c, term)) : base);
 });
 
 document.getElementById("closeModal").addEventListener("click", () => {
