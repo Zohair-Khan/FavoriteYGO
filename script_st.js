@@ -105,7 +105,15 @@ function cardMatchesSearch(card, term) {
   if (card.name.toLowerCase().includes(term)) return true;
   const i18n = (window.CARD_NAMES_I18N || {})[String(card.baseId ?? card.id)];
   if (!i18n) return false;
-  return [i18n.ja_name, i18n.ja_romaji, i18n.ko_name, i18n.ko_romaji]
+  return [
+    i18n.fr_name, i18n.de_name, i18n.it_name, i18n.es_name, i18n.pt_name,
+    i18n.ja_name, i18n.ja_kana, i18n.ja_romaji, i18n.ja_translated, i18n.ja_base, i18n.ja_base_translated,
+    i18n.ja_alt_name, i18n.ja_alt_kana, i18n.ja_alt_romaji, i18n.ja_alt_translated,
+    i18n.ko_name, i18n.ko_romaji, i18n.ko_translated,
+    i18n.sc_name, i18n.sc_pinyin, i18n.sc_translated,
+    i18n.tc_name, i18n.tc_pinyin, i18n.tc_translated,
+    i18n.alt_name,
+  ]
     .some(n => n && n.toLowerCase().includes(term));
 }
 
@@ -140,6 +148,16 @@ CATEGORY_LAYOUT.forEach(cat => {
 });
 
 restorePicksFromStorage();
+
+function applyTemplateImage() {
+  grid.style.backgroundImage = `url("${getTemplateFilename("templateST")}")`;
+}
+
+applyTranslations();
+applyTemplateImage();
+buildLanguageSwitcher("lang-switcher", () => {
+  applyTemplateImage();
+});
 
 // Pure DOM update -- no persistence, no logging. Used both by real selections
 // and by restoring saved picks on page load (which shouldn't count as a new click).
@@ -260,10 +278,14 @@ cardList.addEventListener("scroll", () => {
 searchBox.addEventListener("input", () => {
   const term = searchBox.value.toLowerCase();
 
-  // Favorite S/T normally only offers your current picks, but once you
-  // start typing a search, open it up to every Spell/Trap so you can pull
-  // up literally any card as your overall favorite.
-  const base = (activeBoxKey === "FAVORITE_ST" && term)
+  // Favorite S/T normally only offers your current picks, and Banned S/T
+  // normally only offers the TCG-Forbidden list -- but once you start
+  // typing a search, both open up to every Spell/Trap, so someone outside
+  // the TCG (whose region has its own banlist) can still pick whatever
+  // card is actually banned where they play, even if it's not on the
+  // TCG-specific list.
+  const OPEN_SEARCH_KEYS = new Set(["FAVORITE_ST", "BANNED"]);
+  const base = (OPEN_SEARCH_KEYS.has(activeBoxKey) && term)
     ? getAllCardsFlat()
     : getListFor(activeBoxKey);
 
@@ -308,7 +330,7 @@ function drawCover(ctx, img, x, y, w, h) {
 }
 
 async function buildGridImage() {
-  const template = await loadImage("templateST.png");
+  const template = await loadImage(getTemplateFilename("templateST"));
   const canvasW = template.width * OUTPUT_SCALE;
   const canvasH = template.height * OUTPUT_SCALE;
 

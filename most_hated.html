@@ -13,27 +13,29 @@
 </head>
 <body>
 
+<div id="lang-switcher"></div>
+
 <div id="grid" class="grid grid-hated">
   <!-- boxes are positioned by script_hated.js to sit exactly over the template's card-back slots -->
 </div>
 
 <div class="controls">
-  <button id="downloadBtn">Download Image</button>
-  <a href="index.html" class="cta-button">Favorite Monsters</a>
-  <a href="spell_trap.html" class="cta-button">Favorite Spell/Trap</a>
-  <a href="analytics.html" class="cta-button">See what others voted for!</a>
+  <button id="downloadBtn" data-i18n="btn_download">Download Image</button>
+  <a href="index.html" class="cta-button" data-i18n="nav_favorite_monsters">Favorite Monsters</a>
+  <a href="spell_trap.html" class="cta-button" data-i18n="nav_favorite_spell_trap">Favorite Spell/Trap</a>
+  <a href="analytics.html" class="cta-button" data-i18n="nav_see_analytics">See what others voted for!</a>
 </div>
 
 <div class="credit">
-  Made by <img src="x-logo.png" class="x-logo" alt="X"> <a href="https://x.com/_Bawsch" target="_blank" rel="noopener">_Bawsch</a>
+  <span data-i18n="credit_made_by">Made by</span> <img src="x-logo.png" class="x-logo" alt="X"> <a href="https://x.com/_Bawsch" target="_blank" rel="noopener">_Bawsch</a>
 </div>
 
 <!-- Modal for picking a card within a category -->
 <div id="modal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
-      <input type="text" id="searchBox" placeholder="Search cards...">
-      <button id="clearBtn" title="Remove this box's current selection">Clear</button>
+      <input type="text" id="searchBox" data-i18n="search_placeholder_picker" placeholder="Search cards...">
+      <button id="clearBtn" data-i18n="btn_clear" title="Remove this box's current selection">Clear</button>
       <button id="closeModal">&times;</button>
     </div>
     <div id="cardList" class="card-list"></div>
@@ -45,6 +47,12 @@
 <script src="card_data_st.js"></script>
 <script src="card_data_special.js"></script>
 <script src="card_names_i18n.js"></script>
+<script src="i18n_en.js"></script>
+<script src="i18n_ja.js"></script>
+<script src="i18n_ko.js"></script>
+<script src="i18n_zh_hans.js"></script>
+<script src="i18n_config.js"></script>
+<script src="i18n.js"></script>
 <script src="script_hated.js"></script>
 </body>
 </html>

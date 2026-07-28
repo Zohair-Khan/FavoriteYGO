@@ -3,54 +3,61 @@
 // Spell/Trap categories since their keys (e.g. "SPELL_NORMAL") aren't
 // meant to be displayed as-is.
 const CATEGORY_ORDER = [
-  { key: "OVERALL", label: "Favorite Monster" },
-  { key: "FAVORITE_ST", label: "Favorite S/T" },
-  { key: "NORMAL", label: "Normal" },
-  { key: "EFFECT", label: "Effect" },
-  { key: "RITUAL", label: "Ritual" },
-  { key: "FUSION", label: "Fusion" },
-  { key: "SYNCHRO", label: "Synchro" },
-  { key: "XYZ", label: "Xyz" },
-  { key: "LINK", label: "Link" },
-  { key: "PENDULUM", label: "Pendulum" },
-  { key: "TUNER", label: "Tuner" },
-  { key: "GEMINI", label: "Gemini" },
-  { key: "TOON", label: "Toon" },
-  { key: "SPIRIT", label: "Spirit" },
-  { key: "UNION", label: "Union" },
-  { key: "FLIP", label: "Flip" },
+  { key: "OVERALL", label: "Favorite Monster", group: "monster" },
+  { key: "NORMAL", label: "Normal", group: "monster" },
+  { key: "EFFECT", label: "Effect", group: "monster" },
+  { key: "RITUAL", label: "Ritual", group: "monster" },
+  { key: "FUSION", label: "Fusion", group: "monster" },
+  { key: "SYNCHRO", label: "Synchro", group: "monster" },
+  { key: "XYZ", label: "Xyz", group: "monster" },
+  { key: "LINK", label: "Link", group: "monster" },
+  { key: "PENDULUM", label: "Pendulum", group: "monster" },
+  { key: "TUNER", label: "Tuner", group: "monster" },
+  { key: "GEMINI", label: "Gemini", group: "monster" },
+  { key: "TOON", label: "Toon", group: "monster" },
+  { key: "SPIRIT", label: "Spirit", group: "monster" },
+  { key: "UNION", label: "Union", group: "monster" },
+  { key: "FLIP", label: "Flip", group: "monster" },
 
-  { key: "SPELL_NORMAL", label: "Normal Spell" },
-  { key: "SPELL_CONTINUOUS", label: "Continuous Spell" },
-  { key: "EQUIP", label: "Equip Spell" },
-  { key: "QUICKPLAY", label: "Quick-Play Spell" },
-  { key: "FIELD", label: "Field Spell" },
-  { key: "RITUAL_SPELL", label: "Ritual Spell" },
-  { key: "TRAP_NORMAL", label: "Normal Trap" },
-  { key: "TRAP_CONTINUOUS", label: "Continuous Trap" },
-  { key: "COUNTER", label: "Counter Trap" },
-  { key: "BANNED", label: "Banned S/T" },
-  { key: "FORBIDDEN", label: "\"Forbidden\"" },
-  { key: "POT", label: "\"Pot\"" },
-  { key: "SOLEMN", label: "\"Solemn\"" },
-  { key: "DOMINUS", label: "\"Dominus\"" },
+  { key: "FAVORITE_ST", label: "Favorite S/T", group: "spell_trap" },
+  { key: "SPELL_NORMAL", label: "Normal Spell", group: "spell_trap" },
+  { key: "SPELL_CONTINUOUS", label: "Continuous Spell", group: "spell_trap" },
+  { key: "EQUIP", label: "Equip Spell", group: "spell_trap" },
+  { key: "QUICKPLAY", label: "Quick-Play Spell", group: "spell_trap" },
+  { key: "FIELD", label: "Field Spell", group: "spell_trap" },
+  { key: "RITUAL_SPELL", label: "Ritual Spell", group: "spell_trap" },
+  { key: "TRAP_NORMAL", label: "Normal Trap", group: "spell_trap" },
+  { key: "TRAP_CONTINUOUS", label: "Continuous Trap", group: "spell_trap" },
+  { key: "COUNTER", label: "Counter Trap", group: "spell_trap" },
+  { key: "BANNED", label: "Banned S/T", group: "spell_trap" },
+  { key: "FORBIDDEN", label: "\"Forbidden\"", group: "spell_trap" },
+  { key: "POT", label: "\"Pot\"", group: "spell_trap" },
+  { key: "SOLEMN", label: "\"Solemn\"", group: "spell_trap" },
+  { key: "DOMINUS", label: "\"Dominus\"", group: "spell_trap" },
 
-  { key: "HATED_NORMAL", label: "Hated Normal" },
-  { key: "HATED_EFFECT", label: "Hated Effect" },
-  { key: "HATED_RITUAL", label: "Hated Ritual" },
-  { key: "HATED_FUSION", label: "Hated Fusion" },
-  { key: "HATED_SYNCHRO", label: "Hated Synchro" },
-  { key: "HATED_XYZ", label: "Hated Xyz" },
-  { key: "HATED_LINK", label: "Hated Link" },
-  { key: "HATED_PENDULUM", label: "Hated Pendulum" },
-  { key: "SPELL", label: "Hated Spell" },
-  { key: "TRAP", label: "Hated Trap" },
-  { key: "FLOODGATE", label: "Hated Floodgate" },
-  { key: "HANDTRAP", label: "Hated Handtrap" },
-  { key: "TOWER", label: "Hated Tower" },
-  { key: "ONE_CARD_STARTER", label: "Hated 1-Card Starter" },
-  { key: "MOST_HATED", label: "Most Hated" },
+  { key: "HATED_NORMAL", label: "Hated Normal", group: "hated" },
+  { key: "HATED_EFFECT", label: "Hated Effect", group: "hated" },
+  { key: "HATED_RITUAL", label: "Hated Ritual", group: "hated" },
+  { key: "HATED_FUSION", label: "Hated Fusion", group: "hated" },
+  { key: "HATED_SYNCHRO", label: "Hated Synchro", group: "hated" },
+  { key: "HATED_XYZ", label: "Hated Xyz", group: "hated" },
+  { key: "HATED_LINK", label: "Hated Link", group: "hated" },
+  { key: "HATED_PENDULUM", label: "Hated Pendulum", group: "hated" },
+  { key: "SPELL", label: "Hated Spell", group: "hated" },
+  { key: "TRAP", label: "Hated Trap", group: "hated" },
+  { key: "FLOODGATE", label: "Hated Floodgate", group: "hated" },
+  { key: "HANDTRAP", label: "Hated Handtrap", group: "hated" },
+  { key: "TOWER", label: "Hated Tower", group: "hated" },
+  { key: "ONE_CARD_STARTER", label: "Hated 1-Card Starter", group: "hated" },
+  { key: "MOST_HATED", label: "Most Hated", group: "hated" },
 ];
+
+const GROUPS = [
+  { key: "monster", i18nKey: "group_favorite_monster", label: "Favorite Monster" },
+  { key: "spell_trap", i18nKey: "group_favorite_spell_trap", label: "Favorite Spell/Trap" },
+  { key: "hated", i18nKey: "group_most_hated", label: "Most Hated" },
+];
+let activeGroup = "monster";
 
 const TOP_N_PER_CATEGORY = 10;
 
@@ -121,18 +128,19 @@ function renderSearchResults(rows) {
   searchResultsEl.innerHTML = "";
 
   if (rows.length === 0) {
-    searchResultsEl.innerHTML = "<p class=\"search-empty\">No cards matching that name have any votes yet in this category.</p>";
+    searchResultsEl.innerHTML = `<p class="search-empty">${t("search_empty")}</p>`;
     return;
   }
 
   rows.forEach(row => {
     const el = document.createElement("div");
     el.className = "search-result";
+    const shownName = displayCardName(row.card_id, row.card_name);
     const alreadyAdded = compareCards.some(c => String(c.id) === String(row.card_id));
     el.innerHTML = `
-      <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
+      <img src="images/${row.card_id}.jpg" alt="${shownName}">
       <div class="info">
-        <div class="sr-name">${row.card_name}</div>
+        <div class="sr-name">${shownName}</div>
       </div>
       <div class="sr-rank">#${row.rank}</div>
     `;
@@ -164,18 +172,19 @@ function renderTrendCardBoxes() {
     const pct = total > 0 ? ((card.netPicks / total) * 100).toFixed(2) : "0.00";
     const fraction = globalMax > 0 ? card.netPicks / globalMax : 0;
     const rgb = heatmapColor(fraction);
+    const shownName = displayCardName(card.id, card.name);
 
     const box = document.createElement("div");
     box.className = "trend-card-box";
     box.style.borderColor = colorForIndex(i);
     box.innerHTML = `
       <div class="sr-rank">#${card.rank}</div>
-      <img src="images/${card.id}.jpg" alt="${card.name}">
+      <img src="images/${card.id}.jpg" alt="${shownName}">
       <div class="info">
-        <div class="sr-name">${card.name}</div>
+        <div class="sr-name">${shownName}</div>
       </div>
       <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
-        ${pct}% - ${card.netPicks} Votes
+        ${pct}% - ${card.netPicks} ${t("votes_suffix")}
       </div>
       <button class="remove-btn" title="Remove">&times;</button>
     `;
@@ -242,7 +251,7 @@ async function updateTrendChart() {
   }
 
   trendSectionEl.classList.remove("hidden");
-  trendTitleEl.textContent = `${activeLabel}: Votes over Time`;
+  trendTitleEl.textContent = `${activeLabel}: ${t("trend_title_suffix")}`;
 
   const series = await Promise.all(compareCards.map(async (card, i) => {
     const points = await fetchCardHistory(card.id);
@@ -340,6 +349,34 @@ document.getElementById("trend-reset-zoom").addEventListener("click", () => {
   if (trendChart) trendChart.dispatchAction({ type: "restore" });
 });
 
+function getAllCardsFlat() {
+  const seen = new Map();
+  [window.CARD_DATA, window.CARD_DATA_ST, window.CARD_DATA_SPECIAL].forEach(dataset => {
+    Object.values(dataset || {}).forEach(list => {
+      list.forEach(card => seen.set(String(card.id), card));
+    });
+  });
+  return Array.from(seen.values());
+}
+
+// Matches against the English name as usual, PLUS Japanese/Korean
+// names+romanizations (from card_names_i18n.js, keyed by baseId).
+function cardMatchesSearch(card, term) {
+  if (card.name.toLowerCase().includes(term)) return true;
+  const i18n = (window.CARD_NAMES_I18N || {})[String(card.baseId ?? card.id)];
+  if (!i18n) return false;
+  return [
+    i18n.fr_name, i18n.de_name, i18n.it_name, i18n.es_name, i18n.pt_name,
+    i18n.ja_name, i18n.ja_kana, i18n.ja_romaji, i18n.ja_translated, i18n.ja_base, i18n.ja_base_translated,
+    i18n.ja_alt_name, i18n.ja_alt_kana, i18n.ja_alt_romaji, i18n.ja_alt_translated,
+    i18n.ko_name, i18n.ko_romaji, i18n.ko_translated,
+    i18n.sc_name, i18n.sc_pinyin, i18n.sc_translated,
+    i18n.tc_name, i18n.tc_pinyin, i18n.tc_translated,
+    i18n.alt_name,
+  ]
+    .some(n => n && n.toLowerCase().includes(term));
+}
+
 async function runSearch() {
   const term = searchBoxEl.value.trim();
 
@@ -348,18 +385,47 @@ async function runSearch() {
     return;
   }
 
-  const { data, error } = await supabaseClient
-    .from("card_tally_ranked_view")
-    .select("category, card_id, card_name, net_picks, rank")
-    .eq("category", activeCategory)
-    .ilike("card_name", `%${term}%`)
-    .order("card_name")
-    .limit(50);
+  // Two sources of matches, merged: (1) the existing English-name substring
+  // search directly against the database, and (2) cards whose JA/KO name
+  // matches locally, looked up in the database by id. A card found via (2)
+  // might not actually have any votes in this category, which the query's
+  // own category filter handles naturally.
+  const localMatchIds = getAllCardsFlat()
+    .filter(c => cardMatchesSearch(c, term.toLowerCase()))
+    .map(c => String(c.baseId ?? c.id));
 
+  const queries = [
+    supabaseClient
+      .from("card_tally_ranked_view")
+      .select("category, card_id, card_name, net_picks, rank")
+      .eq("category", activeCategory)
+      .ilike("card_name", `%${term}%`)
+      .order("card_name")
+      .limit(50),
+  ];
+
+  if (localMatchIds.length > 0) {
+    queries.push(
+      supabaseClient
+        .from("card_tally_ranked_view")
+        .select("category, card_id, card_name, net_picks, rank")
+        .eq("category", activeCategory)
+        .in("card_id", localMatchIds)
+        .order("card_name")
+        .limit(50)
+    );
+  }
+
+  const results = await Promise.all(queries);
+  const error = results.find(r => r.error)?.error;
   if (error) {
     searchResultsEl.innerHTML = `<p class="search-empty">Search failed: ${error.message}</p>`;
     return;
   }
+
+  const merged = new Map();
+  results.forEach(r => (r.data || []).forEach(row => merged.set(row.card_id, row)));
+  const data = Array.from(merged.values()).sort((a, b) => a.card_name.localeCompare(b.card_name));
 
   renderSearchResults(data);
 }
@@ -381,7 +447,7 @@ function renderPanel(label, rows, categoryTotal) {
   panelEl.innerHTML = "";
 
   const heading = document.createElement("h2");
-  heading.textContent = `${label} — ${categoryTotal} Votes`;
+  heading.textContent = `${label} — ${categoryTotal} ${t("votes_suffix")}`;
   panelEl.appendChild(heading);
 
   if (rows.length === 0) {
@@ -398,7 +464,7 @@ function renderPanel(label, rows, categoryTotal) {
   // --- Podium for top 3 ---
   const podium = document.createElement("div");
   podium.className = "podium";
-  const medals = ["1st", "2nd", "3rd"];
+  const medals = [t("rank_1st"), t("rank_2nd"), t("rank_3rd")];
   top3.forEach((row, i) => {
     const pct = categoryTotal > 0 ? ((row.net_picks / categoryTotal) * 100).toFixed(2) : "0.00";
     const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
@@ -408,12 +474,13 @@ function renderPanel(label, rows, categoryTotal) {
     card.className = `podium-card rank-${i + 1}`;
     card.style.cursor = "pointer";
     card.title = "Click to add to trend chart";
+    const shownName = displayCardName(row.card_id, row.card_name);
     card.innerHTML = `
       <div class="medal">${medals[i]}</div>
-      <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
-      <div class="pname">${row.card_name}</div>
+      <img src="images/${row.card_id}.jpg" alt="${shownName}">
+      <div class="pname">${shownName}</div>
       <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
-        ${pct}% - ${row.net_picks} Votes
+        ${pct}% - ${row.net_picks} ${t("votes_suffix")}
       </div>
     `;
     card.addEventListener("click", () => addCardToCompare(row.card_id, row.card_name, i + 1, row.net_picks));
@@ -435,12 +502,13 @@ function renderPanel(label, rows, categoryTotal) {
       rowEl.className = "row";
       rowEl.style.cursor = "pointer";
       rowEl.title = "Click to add to trend chart";
+      const shownName = displayCardName(row.card_id, row.card_name);
       rowEl.innerHTML = `
         <div class="rank">#${rank}</div>
-        <img src="images/${row.card_id}.jpg" alt="${row.card_name}">
-        <div class="name">${row.card_name}</div>
+        <img src="images/${row.card_id}.jpg" alt="${shownName}">
+        <div class="name">${shownName}</div>
         <div class="heat-box" style="background: rgb(${rgb.join(",")}); color: ${readableTextColor(rgb)};">
-          ${pct}% - ${row.net_picks} Votes
+          ${pct}% - ${row.net_picks} ${t("votes_suffix")}
         </div>
       `;
       rowEl.addEventListener("click", () => addCardToCompare(row.card_id, row.card_name, rank, row.net_picks));
@@ -456,7 +524,7 @@ async function loadCategory(category, label) {
     return;
   }
 
-  panelEl.innerHTML = "<p class=\"empty\">Loading...</p>";
+  panelEl.innerHTML = `<p class="empty">${t("loading")}</p>`;
 
   const { data, error } = await supabaseClient
     .from("card_tally_view")
@@ -474,32 +542,111 @@ async function loadCategory(category, label) {
   renderPanel(label, data, totalsByCategory[category] || 0);
 }
 
-function buildTabs() {
-  CATEGORY_ORDER.forEach((cat, i) => {
+function buildGroupSelector() {
+  const groupSelectorEl = document.getElementById("group-selector");
+  groupSelectorEl.innerHTML = "";
+  GROUPS.forEach(g => {
     const btn = document.createElement("button");
-    btn.textContent = cat.label;
-    if (i === 0) btn.classList.add("active");
+    btn.textContent = t(g.i18nKey);
+    btn.dataset.group = g.key;
+    if (g.key === activeGroup) btn.classList.add("active");
+    btn.addEventListener("click", () => {
+      if (g.key === activeGroup) return;
+      activeGroup = g.key;
+      groupSelectorEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      buildTabs(); // rebuild the tab row for the newly selected group, and
+                   // select+load its first category automatically
+    });
+    groupSelectorEl.appendChild(btn);
+  });
+}
+
+function catLabel(cat) {
+  return t("cat_" + cat.key.toLowerCase());
+}
+
+// Shows a card's name in whatever language is currently active, using the
+// translated name from card_names_i18n.js (keyed by card_id) when
+// available, falling back to the English name otherwise -- this is
+// independent of the UI-chrome translations above, since it's translating
+// actual card data, not interface text.
+function displayCardName(cardId, englishName) {
+  if (currentLanguage === "en") return englishName;
+  const i18n = (window.CARD_NAMES_I18N || {})[String(cardId)];
+  if (!i18n) return englishName;
+  const candidatesByLang = {
+    ja: [i18n.ja_name, i18n.ja_kana, i18n.ja_romaji],
+    ko: [i18n.ko_name],
+    "zh-Hans": [i18n.sc_name],
+  };
+  const candidates = candidatesByLang[currentLanguage] || [];
+  return candidates.find(v => v) || englishName;
+}
+
+function buildTabs({ preserveSelection = false } = {}) {
+  tabsEl.innerHTML = "";
+  tabsEl.classList.toggle("hated-group", activeGroup === "hated");
+
+  const categoriesInGroup = CATEGORY_ORDER.filter(cat => cat.group === activeGroup);
+  const keepCurrent = preserveSelection && categoriesInGroup.some(cat => cat.key === activeCategory);
+
+  categoriesInGroup.forEach((cat, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = catLabel(cat);
+    const isActive = keepCurrent ? cat.key === activeCategory : i === 0;
+    if (isActive) btn.classList.add("active");
     btn.addEventListener("click", () => {
       tabsEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       activeCategory = cat.key;
-      activeLabel = cat.label;
-      loadCategory(cat.key, cat.label);
+      activeLabel = catLabel(cat);
+      loadCategory(cat.key, activeLabel);
       compareCards = [];
       updateTrendChart();
       if (searchBoxEl.value.trim().length >= 2) runSearch();
     });
     tabsEl.appendChild(btn);
   });
+
+  if (keepCurrent) {
+    // Language switch on the same category -- just refresh the translated
+    // label and re-render the currently loaded panel/trend chart in place.
+    // Trend selections (compareCards) and any active search are left alone.
+    const cat = categoriesInGroup.find(c => c.key === activeCategory);
+    activeLabel = catLabel(cat);
+    loadCategory(activeCategory, activeLabel);
+    updateTrendChart();
+    if (searchBoxEl.value.trim().length >= 2) runSearch();
+  } else {
+    // Genuine group switch (or first load) -- jump to that group's first category.
+    if (categoriesInGroup.length > 0) {
+      activeCategory = categoriesInGroup[0].key;
+      activeLabel = catLabel(categoriesInGroup[0]);
+      loadCategory(activeCategory, activeLabel);
+      compareCards = [];
+      updateTrendChart();
+    }
+  }
 }
 
 async function init() {
+  applyTranslations();
+  buildLanguageSwitcher("lang-switcher", () => {
+    // Language changed -- refresh translated text (group pills, category
+    // tab labels, and the currently loaded panel/trend chart) WITHOUT
+    // resetting back to the group's first category or clearing trend
+    // selections -- that's only supposed to happen on a genuine group switch.
+    buildGroupSelector();
+    buildTabs({ preserveSelection: true });
+  });
+
   if (!supabaseClient) {
     statusEl.textContent = "Analytics aren't set up yet (missing Supabase URL/key in analytics-v2.js).";
     return;
   }
 
-  statusEl.textContent = "Loading...";
+  statusEl.textContent = t("loading");
 
   try {
     const { data: maxRows, error: maxError } = await supabaseClient
@@ -524,8 +671,8 @@ async function init() {
     }
     totalsData.forEach(row => { totalsByCategory[row.category] = row.total_votes; });
 
-    buildTabs();
-    await loadCategory(CATEGORY_ORDER[0].key, CATEGORY_ORDER[0].label);
+    buildGroupSelector();
+    buildTabs(); // loads the first category of the active group internally
 
     statusEl.textContent = "";
   } catch (e) {

@@ -1,11 +1,18 @@
 """
 Run this on YOUR machine -- needs internet access to yugipedia.com.
 
-Fetches Japanese and Korean names/romanizations for every REAL card actually
-shown in this site's pickers (Monsters/Spells/Traps only -- pulled directly
-from card_data.js/card_data_st.js, not YGOPRODeck's raw list, so Tokens,
-Skill Cards, and Rush-only cards are never even considered), keyed by the
-same numeric card id used everywhere else on the site.
+Fetches every available name/translation field from Yugipedia for every REAL
+card actually shown in this site's pickers (Monsters/Spells/Traps only --
+pulled directly from card_data.js/card_data_st.js, not YGOPRODeck's raw
+list, so Tokens, Skill Cards, and Rush-only cards are never even
+considered), keyed by the same numeric card id used everywhere else on the
+site.
+
+Covers French, German, Italian, Spanish, Portuguese, Japanese (base name,
+kana reading, romanization, translated meaning, plus the same four for a
+card's original pre-rename name and its alternate name, where applicable),
+Korean (name, romanization, translated meaning), and Chinese, both
+Traditional and Simplified (name, pinyin, translated meaning).
 
 Only fetches once per BASE card (using baseId), never per-artwork -- alt art
 variants share their base card's translation automatically at display time.
@@ -125,39 +132,89 @@ def fetch_yugipedia_single_by_name(name):
     return None
 
 
-def clean_param_value(value_wikicode):
-    """Some parameters (especially ja_name) mix plain text with one or more
-    {{Ruby|base|reading}} segments to pair kanji with furigana readings --
-    e.g. {{Ruby|焔|えん}}{{Ruby|聖剣|せいけん}}－アルマス. Walking through
-    every node in order (rather than just grabbing the first Ruby tag found)
-    reconstructs the full name: each Ruby segment contributes its base text,
-    and everything else is kept as-is."""
+def extract_ruby_part(value_wikicode, part):
+    """part=0 -> base text (e.g. kanji), part=1 -> the reading/furigana
+    (e.g. kana). Walks every node in order so multiple Ruby segments mixed
+    with plain text (e.g. {{Ruby|焔|えん}}{{Ruby|聖剣|せいけん}}－アルマス)
+    reconstruct correctly rather than only grabbing the first one. Plain
+    text nodes are kept as-is in both variants, since they don't have a
+    separate reading to extract."""
     parts = []
     for node in value_wikicode.nodes:
-        if isinstance(node, mwparserfromhell.nodes.Template) and node.name.matches("Ruby") and node.params:
-            parts.append(str(node.params[0].value))
+        if isinstance(node, mwparserfromhell.nodes.Template) and node.name.matches("Ruby") and len(node.params) > part:
+            parts.append(str(node.params[part].value))
+        elif isinstance(node, mwparserfromhell.nodes.Template) and node.name.matches("Ruby"):
+            parts.append(str(node.params[0].value))  # no reading available, fall back to base
         else:
             parts.append(str(node))
     return "".join(parts).strip()
 
 
+# Plain text fields -- (output_key, template_param)
+FIELD_MAP = [
+    ("fr_name", "fr_name"),
+    ("de_name", "de_name"),
+    ("it_name", "it_name"),
+    ("es_name", "es_name"),
+    ("pt_name", "pt_name"),
+
+    ("ja_romaji", "romaji_name"),
+    ("ja_translated", "translated_name"),
+    ("ja_base", "base_romaji_name"),          # romanization of the ORIGINAL name, for cards later renamed
+    ("ja_base_translated", "base_translated_name"),
+    ("ja_alt_romaji", "ja_alt_romaji"),
+    ("ja_alt_translated", "ja_alt_translated"),
+
+    ("ko_name", "ko_name"),
+    ("ko_romaji", "ko_rr_name"),
+    ("ko_translated", "ko_translated_name"),
+
+    ("sc_name", "sc_name"),                   # Simplified Chinese
+    ("sc_pinyin", "sc_pinyin"),
+    ("sc_translated", "sc_translated_name"),
+
+    ("tc_name", "tc_name"),                   # Traditional Chinese
+    ("tc_pinyin", "tc_pinyin"),
+    ("tc_translated", "tc_translated_name"),
+
+    ("alt_name", "alt_name"),                 # rare generic English alt name
+]
+
+# Ruby-wrapped fields -- (base_output_key, kana_output_key, template_param).
+# Both ja_name and ja_alt_name can pair kanji with a furigana reading via
+# {{Ruby|base|reading}}, same as the Japanese-name handling built earlier.
+RUBY_FIELD_MAP = [
+    ("ja_name", "ja_kana", "ja_name"),
+    ("ja_alt_name", "ja_alt_kana", "ja_alt_name"),
+]
+
+
 def extract_names_from_wikitext(wikitext):
-    """Parses the CardTable2 template out of a page's wikitext and pulls the
-    Japanese/Korean name fields. Returns None if no CardTable2 is found."""
+    """Parses the CardTable2 template out of a page's wikitext and pulls
+    every available name/translation field, across every language the
+    template supports. Returns None if no CardTable2 is found."""
     parsed = mwparserfromhell.parse(wikitext)
     for template in parsed.filter_templates():
         if template.name.matches("CardTable2"):
-            def get(param):
-                if template.has(param):
-                    return clean_param_value(template.get(param).value)
-                return None
+            result = {}
 
-            return {
-                "ja_name": get("ja_name"),
-                "ja_romaji": get("romaji_name"),
-                "ko_name": get("ko_name"),
-                "ko_romaji": get("ko_rr_name"),
-            }
+            for out_key, param in FIELD_MAP:
+                if template.has(param):
+                    value = str(template.get(param).value).strip()
+                    result[out_key] = value or None
+                else:
+                    result[out_key] = None
+
+            for base_key, kana_key, param in RUBY_FIELD_MAP:
+                if template.has(param):
+                    value = template.get(param).value
+                    result[base_key] = extract_ruby_part(value, 0) or None
+                    result[kana_key] = extract_ruby_part(value, 1) or None
+                else:
+                    result[base_key] = None
+                    result[kana_key] = None
+
+            return result
     return None
 
 

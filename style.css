@@ -5,6 +5,37 @@ body {
   padding: 20px;
 }
 
+#lang-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+#lang-switcher button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 2px solid #666;
+  background: #2b2b2b;
+  color: #ccc;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+#lang-switcher button:hover {
+  border-color: #999;
+  color: #fff;
+}
+
+#lang-switcher button.active {
+  background: #fff;
+  color: #222;
+  border-color: #fff;
+}
+
 .grid {
   position: relative;
   width: min(95vw, 1800px, calc((100vh - 160px) * (1920 / 1439)));
