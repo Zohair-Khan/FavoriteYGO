@@ -183,9 +183,23 @@ function getCurrentSelections() {
   return Array.from(seen.values());
 }
 
+// Fusion/Synchro/Xyz/Link monsters are Extra Deck types -- they aren't
+// drawn into your hand or "started" from there, so they don't fit the
+// 1-Card Starter concept and are excluded from that box's pool.
+function getExtraDeckExclusionSet() {
+  const excluded = new Set();
+  ["FUSION", "SYNCHRO", "XYZ", "LINK"].forEach(cat => {
+    (window.CARD_DATA?.[cat] || []).forEach(card => excluded.add(String(card.id)));
+  });
+  return excluded;
+}
+
 function getListFor(key) {
   if (key === "MOST_HATED") return getCurrentSelections();
-  if (key === "ONE_CARD_STARTER") return getAllCardsFlat(); // no restriction at all -- pick from anything
+  if (key === "ONE_CARD_STARTER") {
+    const excluded = getExtraDeckExclusionSet();
+    return getAllCardsFlat().filter(c => !excluded.has(String(c.id)));
+  }
   return getStoredList(key);
 }
 
@@ -341,12 +355,29 @@ cardList.addEventListener("scroll", () => {
 // (frameType, banlist status), so they stay restricted even while searching.
 const OPEN_SEARCH_KEYS = new Set(["FLOODGATE", "HANDTRAP", "TOWER", "ONE_CARD_STARTER", "MOST_HATED"]);
 
-searchBox.addEventListener("input", () => {
+function performSearch() {
   const term = searchBox.value.toLowerCase();
   const base = (OPEN_SEARCH_KEYS.has(activeBoxKey) && term)
     ? getAllCardsFlat()
     : getListFor(activeBoxKey);
   renderCardList(term ? base.filter(c => cardMatchesSearch(c, term)) : base);
+}
+
+// IME input (Japanese/Korean/Chinese) composes text in stages before it's
+// confirmed. Running the search on every "input" event during that
+// in-progress state can filter against incomplete text; skipping while
+// isComposing and re-running on "compositionend" (when the IME commits the
+// final text) fixes this. Romaji/Latin input never enters a composing
+// state, which is why this wouldn't show up there.
+let isComposing = false;
+searchBox.addEventListener("compositionstart", () => { isComposing = true; });
+searchBox.addEventListener("compositionend", () => {
+  isComposing = false;
+  performSearch();
+});
+searchBox.addEventListener("input", () => {
+  if (isComposing) return;
+  performSearch();
 });
 
 document.getElementById("closeModal").addEventListener("click", () => {
