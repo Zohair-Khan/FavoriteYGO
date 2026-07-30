@@ -59,7 +59,7 @@ const GROUPS = [
 ];
 let activeGroup = "monster";
 
-const TOP_N_PER_CATEGORY = 10;
+const TOP_N_PER_CATEGORY = 200;
 
 // Fill these in -- same project as the main picker.
 const SUPABASE_URL = "https://gukihinomsiwmwousjia.supabase.co";
@@ -380,7 +380,7 @@ function cardMatchesSearch(card, term) {
 async function runSearch() {
   const term = searchBoxEl.value.trim();
 
-  if (term.length < 2) {
+  if (term.length < 1) {
     searchResultsEl.innerHTML = "";
     return;
   }
@@ -431,7 +431,15 @@ async function runSearch() {
 }
 
 let searchDebounce = null;
+let isComposing = false;
+searchBoxEl.addEventListener("compositionstart", () => { isComposing = true; });
+searchBoxEl.addEventListener("compositionend", () => {
+  isComposing = false;
+  clearTimeout(searchDebounce);
+  runSearch();
+});
 searchBoxEl.addEventListener("input", () => {
+  if (isComposing) return; // wait for IME composition to be confirmed
   clearTimeout(searchDebounce);
   searchDebounce = setTimeout(runSearch, 300); // debounce so we're not firing a query on every keystroke
 });
@@ -488,11 +496,16 @@ function renderPanel(label, rows, categoryTotal) {
   });
   panelEl.appendChild(podium);
 
-  // --- Ranks 4+ as a compact list ---
+  // --- Ranks 4+ as a scrollable list, loading more as you scroll ---
   if (rest.length > 0) {
     const list = document.createElement("div");
     list.className = "rest-list";
-    rest.forEach((row, i) => {
+    panelEl.appendChild(list);
+
+    const RESTLIST_BATCH_SIZE = 20;
+    let restRenderedCount = 0;
+
+    function buildRestRow(row, i) {
       const rank = i + 4;
       const pct = categoryTotal > 0 ? ((row.net_picks / categoryTotal) * 100).toFixed(2) : "0.00";
       const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
@@ -512,9 +525,38 @@ function renderPanel(label, rows, categoryTotal) {
         </div>
       `;
       rowEl.addEventListener("click", () => addCardToCompare(row.card_id, row.card_name, rank, row.net_picks));
-      list.appendChild(rowEl);
+      return rowEl;
+    }
+
+    function renderNextRestBatch() {
+      const nextItems = rest.slice(restRenderedCount, restRenderedCount + RESTLIST_BATCH_SIZE);
+      nextItems.forEach((row, idx) => {
+        list.appendChild(buildRestRow(row, restRenderedCount + idx));
+      });
+      restRenderedCount += nextItems.length;
+    }
+
+    renderNextRestBatch();
+
+    // Size the container to exactly 7 rows' worth of ACTUAL rendered height
+    // (not a guessed fixed pixel value) -- row height varies slightly when
+    // a longer card name wraps to two lines, so measuring after render is
+    // the only way to get a pixel-perfect "exactly ranks 4-10 visible"
+    // regardless of which specific cards are in a given category.
+    requestAnimationFrame(() => {
+      const renderedRows = list.querySelectorAll(".row");
+      if (renderedRows.length >= 7) {
+        const listTop = list.getBoundingClientRect().top;
+        const seventhRowBottom = renderedRows[6].getBoundingClientRect().bottom;
+        list.style.maxHeight = `${seventhRowBottom - listTop}px`;
+      }
     });
-    panelEl.appendChild(list);
+
+    list.addEventListener("scroll", () => {
+      if (restRenderedCount >= rest.length) return;
+      const nearBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 200;
+      if (nearBottom) renderNextRestBatch();
+    });
   }
 }
 

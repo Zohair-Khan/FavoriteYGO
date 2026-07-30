@@ -502,7 +502,13 @@
     box-sizing: border-box;
   }
 
-  /* Remaining ranks (4+): compact list */
+  /* Remaining ranks (4+): compact scrollable list, loads more as you scroll.
+     Height sized to show exactly ranks 4-10 (7 rows) before scrolling is
+     needed -- podium (top 3) + this = top 10 visible at once. */
+  .rest-list {
+    overflow-y: auto;
+  }
+
   .rest-list .row {
     display: flex;
     align-items: center;
