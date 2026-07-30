@@ -59,7 +59,7 @@ const GROUPS = [
 ];
 let activeGroup = "monster";
 
-const TOP_N_PER_CATEGORY = 200;
+const TOP_N_PER_CATEGORY = 10;
 
 // Fill these in -- same project as the main picker.
 const SUPABASE_URL = "https://gukihinomsiwmwousjia.supabase.co";
@@ -496,16 +496,11 @@ function renderPanel(label, rows, categoryTotal) {
   });
   panelEl.appendChild(podium);
 
-  // --- Ranks 4+ as a scrollable list, loading more as you scroll ---
+  // --- Ranks 4+ as a compact list ---
   if (rest.length > 0) {
     const list = document.createElement("div");
     list.className = "rest-list";
-    panelEl.appendChild(list);
-
-    const RESTLIST_BATCH_SIZE = 20;
-    let restRenderedCount = 0;
-
-    function buildRestRow(row, i) {
+    rest.forEach((row, i) => {
       const rank = i + 4;
       const pct = categoryTotal > 0 ? ((row.net_picks / categoryTotal) * 100).toFixed(2) : "0.00";
       const fraction = globalMax > 0 ? row.net_picks / globalMax : 0;
@@ -525,38 +520,9 @@ function renderPanel(label, rows, categoryTotal) {
         </div>
       `;
       rowEl.addEventListener("click", () => addCardToCompare(row.card_id, row.card_name, rank, row.net_picks));
-      return rowEl;
-    }
-
-    function renderNextRestBatch() {
-      const nextItems = rest.slice(restRenderedCount, restRenderedCount + RESTLIST_BATCH_SIZE);
-      nextItems.forEach((row, idx) => {
-        list.appendChild(buildRestRow(row, restRenderedCount + idx));
-      });
-      restRenderedCount += nextItems.length;
-    }
-
-    renderNextRestBatch();
-
-    // Size the container to exactly 7 rows' worth of ACTUAL rendered height
-    // (not a guessed fixed pixel value) -- row height varies slightly when
-    // a longer card name wraps to two lines, so measuring after render is
-    // the only way to get a pixel-perfect "exactly ranks 4-10 visible"
-    // regardless of which specific cards are in a given category.
-    requestAnimationFrame(() => {
-      const renderedRows = list.querySelectorAll(".row");
-      if (renderedRows.length >= 7) {
-        const listTop = list.getBoundingClientRect().top;
-        const seventhRowBottom = renderedRows[6].getBoundingClientRect().bottom;
-        list.style.maxHeight = `${seventhRowBottom - listTop}px`;
-      }
+      list.appendChild(rowEl);
     });
-
-    list.addEventListener("scroll", () => {
-      if (restRenderedCount >= rest.length) return;
-      const nearBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 200;
-      if (nearBottom) renderNextRestBatch();
-    });
+    panelEl.appendChild(list);
   }
 }
 
@@ -613,17 +579,29 @@ function catLabel(cat) {
 // available, falling back to the English name otherwise -- this is
 // independent of the UI-chrome translations above, since it's translating
 // actual card data, not interface text.
+// Escapes HTML-significant characters in a string before it gets inserted
+// via innerHTML -- necessary because some real card names contain literal
+// "<"/">" characters (e.g. "Maliss <P> Dormouse"), which browsers would
+// otherwise parse as actual HTML tags (case-insensitively -- "<P>" reads
+// as an actual <p> paragraph tag, forcing an unwanted line break) rather
+// than displaying as the literal text they're supposed to be.
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function displayCardName(cardId, englishName) {
-  if (currentLanguage === "en") return englishName;
+  if (currentLanguage === "en") return escapeHtml(englishName);
   const i18n = (window.CARD_NAMES_I18N || {})[String(cardId)];
-  if (!i18n) return englishName;
+  if (!i18n) return escapeHtml(englishName);
   const candidatesByLang = {
     ja: [i18n.ja_name, i18n.ja_kana, i18n.ja_romaji],
     ko: [i18n.ko_name],
     "zh-Hans": [i18n.sc_name],
   };
   const candidates = candidatesByLang[currentLanguage] || [];
-  return candidates.find(v => v) || englishName;
+  return escapeHtml(candidates.find(v => v) || englishName);
 }
 
 function buildTabs({ preserveSelection = false } = {}) {
